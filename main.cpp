@@ -1,6 +1,7 @@
 #include <QCoreApplication>
 
 #include "minisat/core/Solver.h"
+#include "appcore.h"
 
 #include <QDebug>
 
@@ -17,6 +18,7 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
+    /*
     Solver solver;
 
     addVariable(solver, 1);
@@ -96,6 +98,9 @@ int main(int argc, char *argv[])
     }
 
 
+    printf("\n");
+*/
+    AppCore * core = new AppCore(0);
 
     return a.exec();
 }

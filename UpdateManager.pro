@@ -1,4 +1,5 @@
 QT -= gui
+QT += network
 
 CONFIG += c++11 console
 CONFIG -= app_bundle
@@ -17,7 +18,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 INCLUDEPATH += miniSat/
 
 SOURCES += main.cpp \
-    miniSat/minisat/core/Solver.cc
+    appcore.cpp \
+    downloadmanager.cpp \
+    miniSat/minisat/core/Solver.cc \
+    packadge.cpp
 
 HEADERS += \
-    miniSat/minisat/core/Solver.h
+    appcore.h \
+    downloadmanager.h \
+    miniSat/minisat/core/Solver.h \
+    packadge.h
