@@ -1,61 +1,61 @@
 #include "packadge.h"
 #include <QDebug>
 
-PackadgeInfo::PackadgeInfo(QString name, QString path, int version)
-    : _name(name), _path(path), _version(version)
+Packadge::Packadge(QString name, QString version, QSettings &cnf):
+    PackadgeInfo (name, version, cnf)
 {
 
 }
 
-QString PackadgeInfo::path() const
+Packadge::~Packadge()
 {
-    return _path;
-}
-
-QString PackadgeInfo::name() const
-{
-    return _name;
-}
-
-int PackadgeInfo::version() const
-{
-    return _version;
-}
-
-//==========================================================================================================================
-
-PackadgeCandidate::PackadgeCandidate(QString name, QString path, int version)
-    : PackadgeInfo (name, path, version)
-{
-
-}
-
-void PackadgeCandidate::addRel(QString packetName, QString version)
-{
-    qInfo()<<"Add relative to"<<name()<<"rel"<<packetName<<version;
-    _relatives.insertMulti(packetName, version);
-}
-
-PackadgeCandidate::TRels PackadgeCandidate::relatives() const
-{
-    return _relatives;
-}
-
-//==========================================================================================================================
-
-Packadge::Packadge(QString name, QString path, int version):
-    PackadgeInfo (name, path, version)
-{
-
+    qDeleteAll(_candidates);
 }
 
 void Packadge::addCandidate(PackadgeCandidate *candidate)
 {
-    qInfo()<<"Add candidate to"<<name()<<", current version"<<version()<<": avaliable version"<<candidate->version();
+    qInfo()<<"Add candidate to"<<fullName()<<" avaliable version"<<candidate->version();
     _candidates.insert(candidate->version(), candidate);
 }
 
 Packadge::TCandidates Packadge::candidates() const
 {
     return _candidates;
+}
+
+/**
+* @brief Находим для себя обновления
+* @param updateCnf
+* @return
+*/
+int Packadge::parseUpdates(QSettings &updateCnf)
+{
+    qInfo()<<"Parse updates for packet"<<fullName();
+
+    QString avVersionsStr = updateCnf.value(QString("installed/%1").arg(name())).toString();
+    QString updtServer = updateCnf.value("servers/main").toString();
+
+    if ( !avVersionsStr.isEmpty() ) {
+        QStringList avVersions = avVersionsStr.split(";");
+
+        if ( avVersions.count()==0 ) {
+            qWarning()<<"Wrong avaliable versions format"<<avVersionsStr;
+            return -1;
+        }
+
+        foreach(QString avVersion, avVersions) {
+
+            if ( PackadgeInfo::versionStr2Int(avVersion) <= versionInt() ) continue; //-- Учитываем только более новые версии
+
+            qInfo()<<"--new version avaliable"<<avVersion;
+
+            PackadgeCandidate * candidate = new PackadgeCandidate(name(), avVersion, updateCnf);
+
+            candidate->parseRels(updateCnf);
+
+            addCandidate(candidate);
+        }
+    }
+
+    return 1;
 }

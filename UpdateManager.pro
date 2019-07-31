@@ -21,10 +21,18 @@ SOURCES += main.cpp \
     appcore.cpp \
     downloadmanager.cpp \
     miniSat/minisat/core/Solver.cc \
-    packadge.cpp
+    packadge.cpp \
+    packagecandidate.cpp \
+    packageinfo.cpp \
+    packagesatsolver.cpp \
+    updater.cpp
 
 HEADERS += \
     appcore.h \
     downloadmanager.h \
     miniSat/minisat/core/Solver.h \
-    packadge.h
+    packadge.h \
+    packagecandidate.h \
+    packageinfo.h \
+    packagesatsolver.h \
+    updater.h

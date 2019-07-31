@@ -6,16 +6,20 @@
 
 #include "packadge.h"
 #include "downloadmanager.h"
+#include "packagesatsolver.h"
+#include "updater.h"
 
 class AppCore : public QObject
 {
     Q_OBJECT
 public:
     explicit AppCore(QObject *parent = nullptr);
+    ~AppCore();
 
     int collectInstalledPackadges();
     int collectAvaliableUpdates();
-    int solveRelatives();
+
+    int goInstall(const QList<PackadgeCandidate*> & instList);
 
 signals:
     void error();
@@ -27,8 +31,11 @@ private slots:
 
 private:
     QSettings * _mainCnf;
-    QHash<QString, Packadge*> _instPacks;
+    QHash<QString, Packadge*> _instPacks; //-- Установленные пакеты
+
     DownloadManager * _collectUpdtCnfManager;
+    PackageSatSolver * _packageSatSolver;
+    updater * _updater;
 };
 
 #endif // APPCORE_H
