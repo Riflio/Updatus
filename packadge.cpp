@@ -33,7 +33,6 @@ int Packadge::parseUpdates(QSettings &updateCnf, QHash<QString, PackadgeCandidat
     qInfo()<<"Parse updates for packet"<<fullName();
 
     QString avVersionsStr = updateCnf.value(QString("installed/%1").arg(name())).toString();
-    QString updtServer = updateCnf.value("servers/main").toString();
 
     if ( !avVersionsStr.isEmpty() ) {
         QStringList avVersions = avVersionsStr.split(";");
@@ -57,6 +56,7 @@ int Packadge::parseUpdates(QSettings &updateCnf, QHash<QString, PackadgeCandidat
                 candidate->parseRels(updateCnf, instCandidates);
             } else {
                 candidate = instCandidates->value(cndFullName);
+                candidate->setOriginalPackage(this); //-- На случай, если уже был распаршен зависимостями
             }
 
             addCandidate(candidate);

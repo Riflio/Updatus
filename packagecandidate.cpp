@@ -26,6 +26,11 @@ QString PackadgeCandidate::downloadUrl() const
     return  _updtServer+path();
 }
 
+void PackadgeCandidate::setOriginalPackage(Packadge * originalPackage)
+{
+    _originalPackage = originalPackage;
+}
+
 /**
 * @brief Отдаём пакет, которому мы на замену
 * @return

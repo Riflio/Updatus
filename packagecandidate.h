@@ -22,6 +22,8 @@ public:
     void addRel(PackadgeCandidate *cnd);
 
     QString downloadUrl() const;
+
+    void setOriginalPackage(Packadge* originalPackage);
     Packadge * originalPackage() const;
 
 private:
