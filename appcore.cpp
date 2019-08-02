@@ -6,7 +6,7 @@ AppCore::AppCore(QObject *parent) : QObject(parent)
 {    
     _mainCnf = new QSettings("./updateManager.cnf", QSettings::IniFormat, this);
     _collectUpdtCnfManager = new DownloadManager(this);
-    _updater = new updater(this);
+    _updater = new updater(this, _mainCnf);
 
     connect(_collectUpdtCnfManager, &DownloadManager::answerReady, this, &AppCore::onUpdtCnfDownloaded);
 
@@ -73,7 +73,7 @@ void AppCore::onUpdtCnfDownloaded(QTemporaryFile *cnfFile)
 
     //-- Заносим для каждого установленного пакета возможные новые версии и их зависимости
     foreach(Packadge * pack, _instPacks) {
-        int res = pack->parseUpdates(cnfUpdates);
+        int res = pack->parseUpdates(cnfUpdates, &_instCandidates);
         if ( res<0 ) qWarning()<<"Unvaliable parse update for packet"<<pack->fullName();
     }
 

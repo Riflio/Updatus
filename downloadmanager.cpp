@@ -24,6 +24,7 @@ int DownloadManager::request(QUrl url)
 */
 void DownloadManager::onNetworkAnswer(QNetworkReply *reply)
 {
+
     if(reply->error()){
         emit error(reply->errorString());
         return;

@@ -28,7 +28,7 @@ Packadge::TCandidates Packadge::candidates() const
 * @param updateCnf
 * @return
 */
-int Packadge::parseUpdates(QSettings &updateCnf)
+int Packadge::parseUpdates(QSettings &updateCnf, QHash<QString, PackadgeCandidate *> *instCandidates)
 {
     qInfo()<<"Parse updates for packet"<<fullName();
 
@@ -49,9 +49,15 @@ int Packadge::parseUpdates(QSettings &updateCnf)
 
             qInfo()<<"--new version avaliable"<<avVersion;
 
-            PackadgeCandidate * candidate = new PackadgeCandidate(name(), avVersion, updateCnf);
-
-            candidate->parseRels(updateCnf);
+            QString cndFullName = PackadgeCandidate::makeFullName(name(), avVersion);
+            PackadgeCandidate * candidate = nullptr;
+            if ( !instCandidates->contains(cndFullName) ) {
+                candidate = new PackadgeCandidate(name(), avVersion, updateCnf, this);
+                instCandidates->insert(cndFullName, candidate);
+                candidate->parseRels(updateCnf, instCandidates);
+            } else {
+                candidate = instCandidates->value(cndFullName);
+            }
 
             addCandidate(candidate);
         }

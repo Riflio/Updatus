@@ -19,7 +19,7 @@ public:
     typedef QHash<QString, PackadgeCandidate*> TCandidates;
     TCandidates candidates() const;
 
-    int parseUpdates(QSettings&updateCnf);
+    int parseUpdates(QSettings&updateCnf,  QHash<QString, PackadgeCandidate*> * instCandidates);
     void addCandidate(PackadgeCandidate *candidate);
 
 private:

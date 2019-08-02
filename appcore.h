@@ -32,6 +32,7 @@ private slots:
 private:
     QSettings * _mainCnf;
     QHash<QString, Packadge*> _instPacks; //-- Установленные пакеты
+    QHash<QString, PackadgeCandidate*> _instCandidates; //-- Все возможные кондидаты на установку
 
     DownloadManager * _collectUpdtCnfManager;
     PackageSatSolver * _packageSatSolver;

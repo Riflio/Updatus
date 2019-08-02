@@ -1,8 +1,10 @@
 #include "packagecandidate.h"
+#include "packadge.h"
+
 #include <QDebug>
 
-PackadgeCandidate::PackadgeCandidate(QString name, QString version, QSettings &cnf)
-    : PackadgeInfo (name, version, cnf)
+PackadgeCandidate::PackadgeCandidate(QString name, QString version, QSettings &cnf, Packadge * originalPackage)
+    : PackadgeInfo (name, version, cnf), _originalPackage(originalPackage)
 {
     _updtServer = cnf.value("servers/main").toString();
     if (_updtServer.right(1)!="/") _updtServer.append("/");
@@ -24,6 +26,15 @@ QString PackadgeCandidate::downloadUrl() const
     return  _updtServer+path();
 }
 
+/**
+* @brief Отдаём пакет, которому мы на замену
+* @return
+*/
+Packadge *PackadgeCandidate::originalPackage() const
+{
+    return  _originalPackage;
+}
+
 PackadgeCandidate::TRels PackadgeCandidate::relatives() const
 {
     return _relatives;
@@ -34,7 +45,7 @@ PackadgeCandidate::TRels PackadgeCandidate::relatives() const
 * @param updateCnf
 * @return
 */
-int PackadgeCandidate::parseRels(QSettings &updateCnf)
+int PackadgeCandidate::parseRels(QSettings &updateCnf, QHash<QString, PackadgeCandidate *> *instCandidates)
 {
     qInfo()<<"Parse packet rels"<<fullName();
 
@@ -49,12 +60,19 @@ int PackadgeCandidate::parseRels(QSettings &updateCnf)
                 continue;
             }
 
-            PackadgeCandidate * cnd = new PackadgeCandidate(relNameVersion.at(0), relNameVersion.at(1), updateCnf);
+            QString cndFullName = PackadgeCandidate::makeFullName(relNameVersion.at(0), relNameVersion.at(1));
+            PackadgeCandidate * cnd = nullptr;
+
+            if ( !instCandidates->contains(cndFullName) ) {
+                cnd = new PackadgeCandidate(relNameVersion.at(0), relNameVersion.at(1), updateCnf, nullptr);
+                int parseSubRels = cnd->parseRels(updateCnf, instCandidates);
+                instCandidates->insert(cndFullName, cnd);
+                if ( parseSubRels<0 ) return parseSubRels;
+            } else {
+                cnd = instCandidates->value(cndFullName);
+            }
+
             addRel(cnd);
-
-            int parseSubRels = cnd->parseRels(updateCnf);
-            if ( parseSubRels<0 ) return parseSubRels;
-
         }
         qInfo()<<"Rels for packet"<<fullName()<<" parsed.";
     } else {

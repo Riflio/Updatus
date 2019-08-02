@@ -15,6 +15,16 @@ QString PackadgeInfo::path() const
     return _path;
 }
 
+QString PackadgeInfo::pathDir() const
+{
+    return path().left(path().lastIndexOf("/")+1);
+}
+
+QString PackadgeInfo::pathFileName() const
+{
+    return path().right(path().length()-path().lastIndexOf("/")-1);
+}
+
 QString PackadgeInfo::name() const
 {
     return _name;

@@ -13,6 +13,8 @@ public:
     PackadgeInfo(QString name, QString version, QSettings &cnf);
 
     QString path() const;
+    QString pathDir() const;
+    QString pathFileName() const;
     QString name() const;
     QString version() const;
     int versionInt() const;
