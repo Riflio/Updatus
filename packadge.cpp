@@ -4,7 +4,7 @@
 Packadge::Packadge(QString name, QString version, QSettings &cnf):
     PackadgeInfo (name, version, cnf)
 {
-
+    _instType = cnf.value(QString("%1/instType").arg(fullName())).toString();
 }
 
 Packadge::~Packadge()
@@ -16,6 +16,15 @@ void Packadge::addCandidate(PackadgeCandidate *candidate)
 {
     qInfo()<<"Add candidate to"<<fullName()<<" avaliable version"<<candidate->version();
     _candidates.insert(candidate->version(), candidate);
+}
+
+/**
+* @brief Отдаём каким способом мы установлены (вручную или как зависимость кого-либо)
+* @return
+*/
+QString Packadge::instType() const
+{
+    return _instType;
 }
 
 Packadge::TCandidates Packadge::candidates() const

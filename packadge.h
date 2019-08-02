@@ -22,9 +22,11 @@ public:
     int parseUpdates(QSettings&updateCnf,  QHash<QString, PackadgeCandidate*> * instCandidates);
     void addCandidate(PackadgeCandidate *candidate);
 
+    QString instType() const;
+
 private:
     TCandidates _candidates; //--  Кандидаты на обновление
-
+    QString _instType;
 };
 
 #endif // PACKADGE_H

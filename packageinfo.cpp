@@ -7,7 +7,7 @@ PackadgeInfo::PackadgeInfo(QString name, QString version, QSettings &cnf)
     _fullName = makeFullName(_name, _version);
     _versionInt = versionStr2Int(_version);
 
-    _path = cnf.value(QString("%1/path").arg(fullName())).toString();
+    _path = cnf.value(QString("%1/instPath").arg(fullName())).toString();
 }
 
 QString PackadgeInfo::path() const

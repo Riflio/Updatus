@@ -25,6 +25,7 @@ SOURCES += main.cpp \
     packagecandidate.cpp \
     packageinfo.cpp \
     packagesatsolver.cpp \
+    qzip.cpp \
     updater.cpp
 
 HEADERS += \
@@ -35,4 +36,8 @@ HEADERS += \
     packagecandidate.h \
     packageinfo.h \
     packagesatsolver.h \
+    qzipreader_p.h \
+    qzipwriter_p.h \
     updater.h
+
+LIBS += -lz
