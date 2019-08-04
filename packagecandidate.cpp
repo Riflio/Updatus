@@ -45,6 +45,16 @@ PackadgeCandidate::TRels PackadgeCandidate::relatives() const
     return _relatives;
 }
 
+QString PackadgeCandidate::relativesStr() const
+{
+    QStringList rels;
+    foreach(PackadgeCandidate * rel, relatives()) {
+        rels.append(rel->fullName());
+    }
+
+    return  rels.join(";");
+}
+
 /**
 * @brief Выясняем зависимости
 * @param updateCnf

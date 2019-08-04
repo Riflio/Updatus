@@ -138,6 +138,7 @@ void updater::removeOldInstallNew()
 
         Packadge * orPack = up->originalPackage();
         if ( orPack!=nullptr ) {
+            qInfo()<<"Remove old version"<<orPack->fullName();
             QString instPath = _mainCnf->value(QString("%1/cachePath").arg(orPack->fullName())).toString();
             if ( !instPath.isEmpty() ) { //-- Удаляем файлы прежних версий
             }
@@ -147,9 +148,14 @@ void updater::removeOldInstallNew()
             _mainCnf->remove("");
             _mainCnf->endGroup();
             _mainCnf->remove(QString("installed/%1").arg(orPack->name()));
+        } else {
+            qInfo()<<"Has no old version"<<up->fullName();
         }
 
+
         //-- Ставим новые
+        qInfo()<<"Unpacking"<<up->fullName();
+
         QZipReader zip(up->cachePacketPath(), QIODevice::ReadOnly);
         if( !zip.exists() ) {
             qWarning()<<"Package not exist O_o";
@@ -173,7 +179,7 @@ void updater::removeOldInstallNew()
             if ( !fi.isFile) continue;
 
             QString absPath = instDir.path()+QDir::separator()+fi.filePath;
-            qInfo()<<"Unpack new file"<<absPath;
+            qInfo()<<"Unpack file"<<absPath;
 
             QFile file(absPath);
             if( !file.open(QFile::WriteOnly) ) { emit error(); return; }
@@ -189,14 +195,8 @@ void updater::removeOldInstallNew()
         _mainCnf->setValue(QString("%1/cachePath").arg(up->fullName()), up->cachePacketPath());
         _mainCnf->setValue(QString("%1/instPath").arg(up->fullName()), instDir.path());
         _mainCnf->setValue(QString("%1/instType").arg(up->fullName()), ((orPack!=nullptr)? orPack->instType() : "asRel") );
+        _mainCnf->setValue(QString("%1/rels").arg(up->fullName()), up->relativesStr());
         _mainCnf->setValue(QString("installed/%1").arg(up->name()), up->version());
         _mainCnf->sync();
     }
 }
-
-
-
-
-
-
-

@@ -17,7 +17,7 @@ public:
 
     typedef QMultiHash<QString, PackadgeCandidate*> TRels;
     TRels relatives() const;
-
+    QString relativesStr() const;
     int parseRels(QSettings&updateCnf, QHash<QString, PackadgeCandidate *> *instCandidates);
     void addRel(PackadgeCandidate *cnd);
 
