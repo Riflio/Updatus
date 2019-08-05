@@ -19,8 +19,6 @@ PackadgeInfo::PackadgeInfo(QString name, QString version, QSettings &cnf)
     } else {
         _instType = asManual;
     }
-
-    qDebug()<<"PACKAGE INFO"<<fullName()<<_instType;
 }
 
 QString PackadgeInfo::path() const
