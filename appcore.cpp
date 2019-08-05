@@ -6,11 +6,17 @@ AppCore::AppCore(QObject *parent) : QObject(parent)
 {    
     _mainCnf = new QSettings("./updateManager.cnf", QSettings::IniFormat, this);
     _collectUpdtCnfManager = new DownloadManager(this);
-    _updater = new updater(this, _mainCnf);
+    _updater = new Updater(this, _mainCnf);
 
     connect(_collectUpdtCnfManager, &DownloadManager::answerReady, this, &AppCore::onUpdtCnfDownloaded);
+    connect(_updater, &Updater::completed, this, &AppCore::onComplete);
 
-    collectInstalledPackadges();
+    int collectRes = collectInstalledPackadges();
+
+    if (collectRes<0 ) {
+        qWarning()<<"Unable collect install packages.";
+        return;
+    }
 
     collectAvaliableUpdates();
 }
@@ -59,6 +65,17 @@ int AppCore::collectAvaliableUpdates() //TODO: Сделать возможнос
     return 1;
 }
 
+void AppCore::onComplete(bool newInstalled)
+{
+    //-- Записываем дату последнего обновления и время и отсылаем лог
+    if ( newInstalled ) {
+        _mainCnf->setValue("lastUpdated", QDateTime::currentDateTime().toString("dd.MM.yy hh:mm"));
+    }
+
+    _mainCnf->sync();
+    qInfo()<<"Complete!";
+}
+
 /**
 * @brief Загружен очередной файл информации о возможных обновлениях
 * @param cnfFile
@@ -83,7 +100,20 @@ void AppCore::onUpdtCnfDownloaded(QTemporaryFile *cnfFile)
     qInfo()<<"All cnf files downloaded and parsed";
 
     QList<PackadgeCandidate*> toInstList;
-    _packageSatSolver->prepareInstList(_instPacks, toInstList);
+
+    int prepInst = _packageSatSolver->prepareInstList(_instPacks, toInstList);
+
+    if ( prepInst<0 ) {
+        qWarning()<<"Unable build versions three";
+        onComplete(false);
+        return;
+    }
+
+    if ( toInstList.count()==0 ) {
+        qInfo()<<"Has no updates...";
+        onComplete(true);
+        return;
+    }
 
     _updater->goInstall(toInstList);
 }

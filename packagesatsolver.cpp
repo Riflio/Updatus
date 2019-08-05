@@ -43,11 +43,13 @@ PackageSatSolver::TConjuctiveCond PackageSatSolver::conjuction(PackageSatSolver:
 * @param conds
 * @return
 */
-int PackageSatSolver::makePackConds(PackadgeCandidate *cnd, QList<QString> &indexes, QHash<QString, QList<QString> > &packetVersions, QHash<QString, PackageSatSolver::TCondPacket> &conds)
+int PackageSatSolver::makePackConds(PackadgeCandidate *cnd, QList<QString> &indexes, QHash<QString, QList<QString> > &packetVersions, QHash<QString, PackageSatSolver::TCondPacket> &conds, QList<QString> &excludes)
 {
+    if ( packetVersions[cnd->name()].contains(cnd->fullName()) ) { return  1; }
+
     qInfo()<<"Make pack conds"<<cnd->fullName();
 
-    if ( !packetVersions[cnd->name()].contains(cnd->fullName()) ) packetVersions[cnd->name()].append(cnd->fullName());
+    packetVersions[cnd->name()].append(cnd->fullName());
 
     QList<QList<int> > packRelsIndexes;
 
@@ -68,8 +70,11 @@ int PackageSatSolver::makePackConds(PackadgeCandidate *cnd, QList<QString> &inde
         QList<int> relIndexes;
         QList<PackadgeCandidate*> relCnds = rels.values(rName);
 
-        foreach(PackadgeCandidate * relCnd, relCnds) {
-            qDebug()<<"---rel"<<rName<<relCnd->version();
+        foreach(PackadgeCandidate * relCnd, relCnds) {            
+
+            excludes.removeAll(relCnd->fullName()); //-- Если пакет у кого-то в зависимостях, то убираем его из нежелательных
+
+
             int relVerIndex = indexes.indexOf(relCnd->fullName());
             if ( relVerIndex==-1 ) {
                 indexes.append(relCnd->fullName());
@@ -77,15 +82,15 @@ int PackageSatSolver::makePackConds(PackadgeCandidate *cnd, QList<QString> &inde
             }
             relIndexes.append(relVerIndex);
 
-            int subPackConds = makePackConds(relCnd, indexes, packetVersions, conds);
+            int subPackConds = makePackConds(relCnd, indexes, packetVersions, conds, excludes);
             if ( subPackConds<0 ) return subPackConds;
 
         }
 
-        if ( !relIndexes.empty() ) packRelsIndexes.append(relIndexes);
+        if ( relIndexes.count()>0 ) packRelsIndexes.append(relIndexes);
     }
 
-    if ( !packRelsIndexes.empty() ) conds[cnd->name()].append(packRelsIndexes);
+    if ( packRelsIndexes.count()>1 ) conds[cnd->name()].append(packRelsIndexes);
 
     return  1;
 }
@@ -94,6 +99,8 @@ int PackageSatSolver::makePackConds(PackadgeCandidate *cnd, QList<QString> &inde
 
 /**
 * @brief Самое весёлое. Решаем зависимости, т.е. что будем устанавливать в итоге
+* @param instPacks - установленные на данный момент пакеты
+* @param toInstPacks - отвечаем, какие пакеты следует установить
 * @return
 */
 int PackageSatSolver::prepareInstList(const QHash<QString, Packadge*> & instPacks, QList<PackadgeCandidate*> &toInstPacks)
@@ -105,12 +112,24 @@ int PackageSatSolver::prepareInstList(const QHash<QString, Packadge*> & instPack
     QHash<QString, TCondPacket> conds; //-- Имя пакета, список ИЛИ список И список ИЛИ
     QHash<QString, QList<QString> > packetVersions; //-- Для каждого имени пакета запомним все возможные версии
 
+    //-- Укажем, что установленные версии пакетов, у которых есть кондидаты на обновления, не желательны
+    QList<QString> excludes;
+    foreach(Packadge * instPack, instPacks) {
+        if ( instPack->candidates().count()==0 ) continue;
+        excludes.append(instPack->fullName());
+    }
+
+    qDebug()<<"Excludes before"<<excludes;
     foreach(Packadge * pack, instPacks) {
+
+        makePackConds(pack, indexes, packetVersions, conds, excludes);
+
         Packadge::TCandidates cnds =  pack->candidates();
         foreach(PackadgeCandidate * cnd, cnds) {
-            makePackConds(cnd, indexes, packetVersions, conds);
+            makePackConds(cnd, indexes, packetVersions, conds, excludes);
         }
     }
+
 
     //-- Подготавливаем всё к решению
     Solver solver;
@@ -146,6 +165,15 @@ int PackageSatSolver::prepareInstList(const QHash<QString, Packadge*> & instPack
         }
     }
 
+    qInfo()<<"Excludes"<<excludes;
+    //-- Добавляем отметку о нежелательных
+    foreach(QString exc, excludes) { //TODO: Отптимизировать и условия по такому пакету не собирать
+        vec<Lit> lits;
+        int excIndx = indexes.indexOf(exc);
+        lits.push(~mkLit(excIndx));
+        solver.addClause_(lits);
+    }
+
     //-- В условия добавим, что от каждого пакета нам нужна лишь одна версия
     foreach(QList<QString> vers, packetVersions) {
 
@@ -171,8 +199,6 @@ int PackageSatSolver::prepareInstList(const QHash<QString, Packadge*> & instPack
             }
         }
     }
-
-
     qInfo()<<"Variables:"<<solver.nVars();
     qInfo()<<"Clauses:"<<solver.nClauses();
 
@@ -201,9 +227,9 @@ int PackageSatSolver::prepareInstList(const QHash<QString, Packadge*> & instPack
 
     //-- Создаём список для установки
     foreach(Packadge * pack, instPacks) {
-        Packadge::TCandidates cnds =  pack->candidates();
+        Packadge::TCandidates cnds =  pack->candidates();        
         foreach(PackadgeCandidate * cnd, cnds) {
-             toInstPacks.append(makeInstallList(cnd, indexes, toInstIndexes));
+            toInstPacks.append(makeInstallList(cnd, indexes, instPacks, toInstIndexes));
         }
     }
 
@@ -218,15 +244,17 @@ int PackageSatSolver::prepareInstList(const QHash<QString, Packadge*> & instPack
 * @param toInstIndexes
 * @return
 */
-QList<PackadgeCandidate *> PackageSatSolver::makeInstallList(PackadgeCandidate * cnd, const QList<QString> &indexes, QList<bool> &toInstIndexes)
+QList<PackadgeCandidate *> PackageSatSolver::makeInstallList(PackadgeCandidate * cnd, const QList<QString> &indexes, const QHash<QString, Packadge*> & instPacks, QList<bool> &toInstIndexes)
 {
     QList<PackadgeCandidate *> instList;
     int cndIndex = indexes.indexOf(cnd->fullName());
     if ( !toInstIndexes[cndIndex] ) return instList;
     toInstIndexes[cndIndex] = false; //-- Что бы ещё раз не заинсталлили
-    instList.append(cnd);
+    if ( !instPacks.contains(cnd->fullName()) ) {
+        instList.append(cnd);
+    }
     foreach(PackadgeCandidate* relCnd, cnd->relatives()) {
-        instList.append( makeInstallList(relCnd, indexes, toInstIndexes) );
+        instList.append( makeInstallList(relCnd, indexes, instPacks, toInstIndexes) );
     }
     return  instList;
 }

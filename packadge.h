@@ -10,7 +10,7 @@
 /**
 * @brief Установленный пакет
 */
-class Packadge: public PackadgeInfo
+class Packadge: public PackadgeCandidate
 {
 public:
     Packadge(QString name, QString version, QSettings &cnf);
@@ -22,11 +22,9 @@ public:
     int parseUpdates(QSettings&updateCnf,  QHash<QString, PackadgeCandidate*> * instCandidates);
     void addCandidate(PackadgeCandidate *candidate);
 
-    QString instType() const;
-
 private:
     TCandidates _candidates; //--  Кандидаты на обновление
-    QString _instType;
+
 };
 
 #endif // PACKADGE_H

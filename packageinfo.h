@@ -20,8 +20,16 @@ public:
     int versionInt() const;
     QString fullName() const;
 
-    static inline QString makeFullName(QString name, QString version) { return QString("%1:%2").arg(name).arg(version); }
-    static inline int versionStr2Int(QString version) { return version.replace(".", "").toInt(); }
+    int instType() const;
+
+    enum instTypes {
+        asManual =2,
+        asRels = 4
+    };
+
+    static QString makeFullName(QString name, QString version);
+    static int versionStr2Int(QString version);
+    static QString instTypeStr(int type);
 
 private:
     QString _name;
@@ -29,6 +37,7 @@ private:
     QString _version;
     QString _fullName;
     int _versionInt;
+    int _instType;
 
 };
 

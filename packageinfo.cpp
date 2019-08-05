@@ -8,6 +8,19 @@ PackadgeInfo::PackadgeInfo(QString name, QString version, QSettings &cnf)
     _versionInt = versionStr2Int(_version);
 
     _path = cnf.value(QString("%1/instPath").arg(fullName())).toString();
+
+    QString instTypeStr = cnf.value(QString("%1/instType").arg(fullName()), "").toString();
+
+    if ( instTypeStr=="asManual" ) {
+        _instType = asManual;
+    } else
+    if ( instTypeStr=="asRels" ) {
+        _instType = asRels;
+    } else {
+        _instType = asManual;
+    }
+
+    qDebug()<<"PACKAGE INFO"<<fullName()<<_instType;
 }
 
 QString PackadgeInfo::path() const
@@ -43,4 +56,33 @@ int PackadgeInfo::versionInt() const
 QString PackadgeInfo::fullName() const
 {
     return  _fullName;
+}
+
+
+/**
+* @brief Отдаём каким способом мы установлены (вручную или как зависимость кого-либо)
+* @return
+*/
+int PackadgeInfo::instType() const
+{
+    return _instType;
+}
+
+QString PackadgeInfo::makeFullName(QString name, QString version)
+{
+    return QString("%1:%2").arg(name).arg(version);
+}
+
+int PackadgeInfo::versionStr2Int(QString version)
+{
+    return version.replace(".", "").toInt();
+}
+
+QString PackadgeInfo::instTypeStr(int type)
+{
+    switch (type) {
+        case asRels: return  "asRels";
+        case asManual: return "asManual";
+        default: return "asManual";
+    }
 }

@@ -21,12 +21,12 @@ public:
     TConjuctiveCond conjuction(TDisjuctiveCond disj);
 
     typedef QList<QList<QList<int> > > TCondPacket;
-    int makePackConds(PackadgeCandidate * cnd, QList<QString> &indexes, QHash<QString, QList<QString> > & packetVersions, QHash<QString, TCondPacket> &conds);
+    int makePackConds(PackadgeCandidate * cnd, QList<QString> &indexes, QHash<QString, QList<QString> > & packetVersions, QHash<QString, TCondPacket> &conds, QList<QString> &excludes);
 
     int prepareInstList(const QHash<QString, Packadge*> & instPacks, QList<PackadgeCandidate *> &toInstPacks);
 
 protected:
-    QList<PackadgeCandidate*> makeInstallList(PackadgeCandidate *cnd, const QList<QString> &indexes, QList<bool> &toInstIndexes);
+    QList<PackadgeCandidate*> makeInstallList(PackadgeCandidate *cnd, const QList<QString> &indexes, const QHash<QString, Packadge*> & instPacks, QList<bool> &toInstIndexes);
 
 };
 

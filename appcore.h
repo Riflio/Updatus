@@ -21,10 +21,12 @@ public:
 
     int goInstall(const QList<PackadgeCandidate*> & instList);
 
+
 signals:
     void error();
 
 public slots:
+    void onComplete(bool newInstalled);
 
 private slots:
     void onUpdtCnfDownloaded(QTemporaryFile * cnfFile);
@@ -36,7 +38,7 @@ private:
 
     DownloadManager * _collectUpdtCnfManager;
     PackageSatSolver * _packageSatSolver;
-    updater * _updater;
+    Updater * _updater;
 };
 
 #endif // APPCORE_H

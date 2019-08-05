@@ -49,16 +49,19 @@ private:
 };
 
 
-class updater : public QObject
+class Updater : public QObject
 {
     Q_OBJECT
 public:
-    explicit updater(QObject *parent, QSettings * mainCnf);
+    explicit Updater(QObject *parent, QSettings * mainCnf);
     int goInstall(const QList<PackadgeCandidate*> &instList);
 
+    void goError();
+    void goComplete(bool newInstalled);
 
 signals:
     void error();
+    void completed(bool newInstalled);
 
 public slots:
 
@@ -72,6 +75,8 @@ private:
 private:    
     QHash<QString, PackadgeCandidateUpdater*> _updaterPackages;
     QSettings * _mainCnf;
+    bool _hasError;
+
 };
 
 #endif // UPDATER_H

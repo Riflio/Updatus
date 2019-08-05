@@ -7,6 +7,8 @@
 PackadgeCandidateUpdater::PackadgeCandidateUpdater(const PackadgeCandidate &other, QString tempDir):
     PackadgeCandidate(other), _status(US_NONE), _tempDir(tempDir)
 {
+    if ( _tempDir.right(1)=="/" ) _tempDir = _tempDir.left(_tempDir.length()-1);
+
     _dlMr = new DownloadManager();
     connect(_dlMr, &DownloadManager::answerReady, this, &PackadgeCandidateUpdater::onDownloadComplete);
 }
@@ -38,7 +40,7 @@ void PackadgeCandidateUpdater::onDownloadComplete(QTemporaryFile * packetFile)
 
     //TODO: Сверять контрольные суммы первым делом
 
-    QString cachePath = _tempDir+pathDir();
+    QString cachePath = _tempDir+QDir::separator()+pathDir();
     QDir dir;
 
     if ( !dir.exists(cachePath) ) {
@@ -71,8 +73,8 @@ void PackadgeCandidateUpdater::onDownloadComplete(QTemporaryFile * packetFile)
 
 //========================================================================================================
 
-updater::updater(QObject *parent, QSettings * mainCnf)
-    : QObject(parent), _mainCnf(mainCnf)
+Updater::Updater(QObject *parent, QSettings * mainCnf)
+    : QObject(parent), _mainCnf(mainCnf), _hasError(false)
 {
     //TODO: Проверять существование tempDir и доступность для записи/чтения
 }
@@ -82,20 +84,35 @@ updater::updater(QObject *parent, QSettings * mainCnf)
 * @param
 * @return
 */
-int updater::goInstall(const QList<PackadgeCandidate *> & instList)
+int Updater::goInstall(const QList<PackadgeCandidate *> & instList)
 {
     qInfo()<<"Go install";
+
     foreach(PackadgeCandidate * cnd, instList) {
+
+        if ( _hasError ) return  -1;
+
         qInfo()<<"To install"<<cnd->fullName();
 
         PackadgeCandidateUpdater * pcu = new PackadgeCandidateUpdater(*cnd, _mainCnf->value("tempDir").toString());
         _updaterPackages.insert(cnd->fullName(), pcu);
 
-        connect(pcu, &PackadgeCandidateUpdater::packageDownloaded, this, &updater::onPacketDownloaded);
+        connect(pcu, &PackadgeCandidateUpdater::packageDownloaded, this, &Updater::onPacketDownloaded);
         pcu->download();
     }
 
     return 1;
+}
+
+void Updater::goComplete(bool newInstalled)
+{
+    emit completed(newInstalled);
+}
+
+void Updater::goError()
+{
+    _hasError = true;
+    emit error();
 }
 
 /**
@@ -103,9 +120,11 @@ int updater::goInstall(const QList<PackadgeCandidate *> & instList)
 * @param pack
 * @param packetFile
 */
-void updater::onPacketDownloaded(PackadgeCandidateUpdater *pack)
+void Updater::onPacketDownloaded(PackadgeCandidateUpdater *pack)
 {
     Q_UNUSED(pack);
+
+    if ( _hasError ) return;
 
     foreach(PackadgeCandidateUpdater * up, _updaterPackages) {
         if ( !(up->status() & PackadgeCandidateUpdater::US_DOWNLOADED) ) return;
@@ -117,7 +136,7 @@ void updater::onPacketDownloaded(PackadgeCandidateUpdater *pack)
 /**
 * @brief Все пакеты загружены
 */
-void updater::allPacketsDownloaded()
+void Updater::allPacketsDownloaded()
 {
     qInfo()<<"All packages downloaded!";
     removeOldInstallNew();
@@ -126,7 +145,7 @@ void updater::allPacketsDownloaded()
 /**
 * @brief Удаляем предыдущие установленные пакеты, к которым скачали обновления
 */
-void updater::removeOldInstallNew()
+void Updater::removeOldInstallNew()
 {
     qInfo()<<"Begin remove old packs and install new";
 
@@ -137,10 +156,23 @@ void updater::removeOldInstallNew()
     foreach(PackadgeCandidateUpdater * up, _updaterPackages) {
 
         Packadge * orPack = up->originalPackage();
+        QDir instDir = (orPack!=nullptr && !orPack->path().isEmpty())? orPack->path() : QDir(defaultInstPath);
+
         if ( orPack!=nullptr ) {
             qInfo()<<"Remove old version"<<orPack->fullName();
-            QString instPath = _mainCnf->value(QString("%1/cachePath").arg(orPack->fullName())).toString();
-            if ( !instPath.isEmpty() ) { //-- Удаляем файлы прежних версий
+            QString cachePath = _mainCnf->value(QString("%1/cachePath").arg(orPack->fullName())).toString();
+            if ( !cachePath.isEmpty() ) { //-- Удаляем файлы прежних версий
+
+                QZipReader zipRem(cachePath, QIODevice::ReadOnly);
+                if ( zipRem.exists() ) {
+                    QList<QZipReader::FileInfo> oldFiles = zipRem.fileInfoList();
+                    foreach (QZipReader::FileInfo fi, oldFiles) {
+                        if ( fi.isDir ) instDir.remove(fi.filePath);
+                        if ( fi.isFile ) QFile::remove(instDir.path()+QDir::separator()+fi.filePath);
+                    }
+                    zipRem.close();
+                }
+
             }
 
             //-- Удаляем запись о пакете
@@ -164,14 +196,12 @@ void updater::removeOldInstallNew()
 
         QList<QZipReader::FileInfo> allFiles = zip.fileInfoList();
 
-        QDir instDir = (orPack!=nullptr && !orPack->path().isEmpty())? orPack->path() : QDir(defaultInstPath);
-
         //-- Создаём пути для файлов и устанавливаем права
         foreach (QZipReader::FileInfo fi, allFiles) {
             if ( !fi.isDir ) continue;
             QString absPath = instDir.path()+QDir::separator()+fi.filePath;
             if ( !instDir.mkpath(fi.filePath) ) { emit error(); return; }
-            if ( !QFile::setPermissions(absPath, fi.permissions) ) { emit error(); return; }
+            //if ( !QFile::setPermissions(absPath, fi.permissions) ) { emit error(); return; }
         }
 
         //-- По путям закидываем файлы
@@ -185,7 +215,7 @@ void updater::removeOldInstallNew()
             if( !file.open(QFile::WriteOnly) ) { emit error(); return; }
 
             file.write(zip.fileData(fi.filePath), zip.fileData(fi.filePath).size());
-            file.setPermissions(fi.permissions);
+            //file.setPermissions(fi.permissions);
             file.close();
         }
 
@@ -194,9 +224,11 @@ void updater::removeOldInstallNew()
         //-- Записываем инфу
         _mainCnf->setValue(QString("%1/cachePath").arg(up->fullName()), up->cachePacketPath());
         _mainCnf->setValue(QString("%1/instPath").arg(up->fullName()), instDir.path());
-        _mainCnf->setValue(QString("%1/instType").arg(up->fullName()), ((orPack!=nullptr)? orPack->instType() : "asRel") );
+        _mainCnf->setValue(QString("%1/instType").arg(up->fullName()), PackadgeInfo::instTypeStr( ( (orPack!=nullptr)? orPack->instType() : PackadgeInfo::asRels)));
         _mainCnf->setValue(QString("%1/rels").arg(up->fullName()), up->relativesStr());
         _mainCnf->setValue(QString("installed/%1").arg(up->name()), up->version());
         _mainCnf->sync();
     }
+
+    goComplete(true);
 }

@@ -2,9 +2,9 @@
 #include <QDebug>
 
 Packadge::Packadge(QString name, QString version, QSettings &cnf):
-    PackadgeInfo (name, version, cnf)
+    PackadgeCandidate(name, version, cnf, nullptr)
 {
-    _instType = cnf.value(QString("%1/instType").arg(fullName())).toString();
+
 }
 
 Packadge::~Packadge()
@@ -16,15 +16,6 @@ void Packadge::addCandidate(PackadgeCandidate *candidate)
 {
     qInfo()<<"Add candidate to"<<fullName()<<" avaliable version"<<candidate->version();
     _candidates.insert(candidate->version(), candidate);
-}
-
-/**
-* @brief Отдаём каким способом мы установлены (вручную или как зависимость кого-либо)
-* @return
-*/
-QString Packadge::instType() const
-{
-    return _instType;
 }
 
 Packadge::TCandidates Packadge::candidates() const
@@ -41,7 +32,7 @@ int Packadge::parseUpdates(QSettings &updateCnf, QHash<QString, PackadgeCandidat
 {
     qInfo()<<"Parse updates for packet"<<fullName();
 
-    QString avVersionsStr = updateCnf.value(QString("installed/%1").arg(name())).toString();
+    QString avVersionsStr = updateCnf.value(QString("updates/%1").arg(name())).toString();
 
     if ( !avVersionsStr.isEmpty() ) {
         QStringList avVersions = avVersionsStr.split(";");
@@ -71,6 +62,8 @@ int Packadge::parseUpdates(QSettings &updateCnf, QHash<QString, PackadgeCandidat
             addCandidate(candidate);
         }
     }
+
+    parseRels(updateCnf, instCandidates);
 
     return 1;
 }
