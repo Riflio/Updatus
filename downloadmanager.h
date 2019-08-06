@@ -24,6 +24,8 @@ signals:
 
 private slots:
     void onNetworkAnswer(QNetworkReply *reply);
+    void onNetworkError(QNetworkReply::NetworkError err);
+    void onNetworkErrorSsl(const QList<QSslError> &errors);
 
 private:
     QNetworkAccessManager * _naManager;

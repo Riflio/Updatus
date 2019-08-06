@@ -11,6 +11,7 @@ PackadgeCandidateUpdater::PackadgeCandidateUpdater(const PackadgeCandidate &othe
 
     _dlMr = new DownloadManager();
     connect(_dlMr, &DownloadManager::answerReady, this, &PackadgeCandidateUpdater::onDownloadComplete);
+    connect(_dlMr, &DownloadManager::error, this, &PackadgeCandidateUpdater::onDownloadError);
 }
 
 void PackadgeCandidateUpdater::addStatus(int status)
@@ -70,6 +71,12 @@ void PackadgeCandidateUpdater::onDownloadComplete(QTemporaryFile * packetFile)
     emit packageDownloaded(this);
 }
 
+void PackadgeCandidateUpdater::onDownloadError(QString err)
+{
+    qWarning()<<"Error downloading package"<<fullName()<<":"<<err;
+    emit error();
+}
+
 
 //========================================================================================================
 
@@ -98,6 +105,7 @@ int Updater::goInstall(const QList<PackadgeCandidate *> & instList)
         _updaterPackages.insert(cnd->fullName(), pcu);
 
         connect(pcu, &PackadgeCandidateUpdater::packageDownloaded, this, &Updater::onPacketDownloaded);
+        connect(pcu, &PackadgeCandidateUpdater::error, this, &Updater::onPacketDownloadError);
         pcu->download();
     }
 
@@ -131,6 +139,11 @@ void Updater::onPacketDownloaded(PackadgeCandidateUpdater *pack)
     }
 
     allPacketsDownloaded();
+}
+
+void Updater::onPacketDownloadError()
+{
+    emit error();
 }
 
 /**

@@ -1,5 +1,6 @@
 #include "downloadmanager.h"
 
+#include "defines.h"
 #include <QNetworkRequest>
 #include <QFile>
 
@@ -14,7 +15,12 @@ int DownloadManager::request(QUrl url)
     qDebug()<<"Send request"<<url.toString();
     QNetworkRequest request;
     request.setUrl(url);
-    _naManager->get(request);
+    request.setRawHeader("User-Agent", QString("Updatys %1").arg(VERSION).toUtf8());
+    QNetworkReply *reply = _naManager->get(request);
+
+    connect(reply, QOverload<QNetworkReply::NetworkError>::of(&QNetworkReply::error), this, &DownloadManager::onNetworkError);
+    connect(reply, &QNetworkReply::sslErrors, this, &DownloadManager::onNetworkErrorSsl);
+
     return  1;
 }
 
@@ -41,4 +47,14 @@ void DownloadManager::onNetworkAnswer(QNetworkReply *reply)
     tmpFile->flush();
 
     emit answerReady(tmpFile);
+}
+
+void DownloadManager::onNetworkError(QNetworkReply::NetworkError err)
+{
+    emit error(QString("Network error: %1").arg(err));
+}
+
+void DownloadManager::onNetworkErrorSsl(const QList<QSslError> &errors)
+{
+    emit error(QString("Network ssl error"));
 }

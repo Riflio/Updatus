@@ -5,14 +5,6 @@
 
 AppCore::AppCore(QObject *parent) : QObject(parent)
 {
-
-    _collectUpdtCnfManager = new DownloadManager(this);
-    _updater = new Updater(this, _mainCnf);
-
-    connect(_collectUpdtCnfManager, &DownloadManager::answerReady, this, &AppCore::onUpdtCnfDownloaded);
-    connect(_updater, &Updater::completed, this, &AppCore::onComplete);
-
-
     qInfo()<<"Welcome to UpdateManager"<<VERSION;
 }
 
@@ -24,7 +16,7 @@ AppCore::~AppCore()
 
 bool AppCore::upgrade(QString mainCnfPath)
 {
-    qInfo()<<"Start upgrade.";
+    qInfo()<<"Start upgrade from"<<mainCnfPath;
 
     if ( !QFile::exists(mainCnfPath) ) {
         qWarning()<<"Configuration file not exists!";
@@ -32,6 +24,14 @@ bool AppCore::upgrade(QString mainCnfPath)
     }
 
     _mainCnf = new QSettings(mainCnfPath, QSettings::IniFormat, this);
+
+    _collectUpdtCnfManager = new DownloadManager(this);
+    _updater = new Updater(this, _mainCnf);
+
+    connect(_collectUpdtCnfManager, &DownloadManager::answerReady, this, &AppCore::onUpdtCnfDownloaded);
+    connect(_updater, &Updater::completed, this, &AppCore::onComplete);
+    connect(_updater, &Updater::error, this, &AppCore::onError);
+
 
     int collectInstRes = collectInstalledPackadges();
 
@@ -97,6 +97,11 @@ void AppCore::onComplete(bool newInstalled)
 
     _mainCnf->sync();
     qInfo()<<"Complete!";
+}
+
+void AppCore::onError()
+{
+    qWarning()<<"Errors occurred during the upgrade process. Execution aborted.";
 }
 
 /**

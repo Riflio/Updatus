@@ -35,6 +35,7 @@ public:
 
 private slots:
     void onDownloadComplete(QTemporaryFile * packetFile);
+    void onDownloadError(QString err);
 
 signals:
     void error();
@@ -67,6 +68,7 @@ public slots:
 
 private slots:
     void onPacketDownloaded(PackadgeCandidateUpdater * pack);
+    void onPacketDownloadError();
 
 private:
     void allPacketsDownloaded();
