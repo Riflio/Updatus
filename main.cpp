@@ -22,7 +22,6 @@ int main(int argc, char *argv[])
         QString("./updateManager.cnf")
     );
     parser.addOption(confFileOpt);
-
     parser.process(a);
 
     AppCore * core = new AppCore(nullptr);

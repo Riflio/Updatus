@@ -8,6 +8,7 @@
 #include "downloadmanager.h"
 #include "packagesatsolver.h"
 #include "updater.h"
+#include "logger.h"
 
 class AppCore : public QObject
 {
@@ -22,7 +23,6 @@ public:
     int collectAvaliableUpdates();
 
     int goInstall(const QList<PackadgeCandidate*> & instList);
-
 
 signals:
     void error();
@@ -42,6 +42,8 @@ private:
     DownloadManager * _collectUpdtCnfManager;
     PackageSatSolver * _packageSatSolver;
     Updater * _updater;
+
+    QMap<QString, QVariant> _infoVariables; //-- Собираем всё, что есть у [info] в файле конфига
 };
 
 #endif // APPCORE_H
