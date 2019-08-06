@@ -1,11 +1,13 @@
 #include "appcore.h"
 #include "defines.h"
 #include <QDebug>
-
+#include <QCoreApplication>
 
 AppCore::AppCore(QObject *parent) : QObject(parent)
 {
-    qInfo()<<"Welcome to UpdateManager"<<VERSION;
+    Logger::instance();
+    qInstallMessageHandler(Logger::qDebugWrapperMessageHandler);
+    qInfo()<<"Welcome to Updatus - update manager for our programs."<<VERSION;
 }
 
 AppCore::~AppCore()
@@ -33,6 +35,13 @@ bool AppCore::upgrade(QString mainCnfPath)
     connect(_updater, &Updater::error, this, &AppCore::onError);
 
 
+    _mainCnf->beginReadArray("info");
+        QStringList infoKeys = _mainCnf->allKeys();
+        foreach(QString infoKey, infoKeys) {
+            _infoVariables[infoKey] = _mainCnf->value(infoKey);
+        }
+    _mainCnf->endArray();
+
     int collectInstRes = collectInstalledPackadges();
 
     if ( collectInstRes<0 ) {
@@ -56,8 +65,6 @@ int AppCore::collectInstalledPackadges()
 {
     qInfo()<<"Collect info about installed packadges...";
 
-
-    //-- Узнаем, какие пакеты установлены и их версии
     _mainCnf->beginReadArray("installed");
         QStringList instPacksNames = _mainCnf->allKeys();
     _mainCnf->endArray();
@@ -96,12 +103,20 @@ void AppCore::onComplete(bool newInstalled)
     }
 
     _mainCnf->sync();
-    qInfo()<<"Complete!";
+    qInfo()<<"Complete!";    
+    _infoVariables["status"]="OK";
+    _infoVariables["hasNewInstalled"]=(newInstalled)? "yes" : "no";
+
+    Logger::instance().sendToServer(QUrl(_mainCnf->value("sendLogs").toString()), _infoVariables);
+    QCoreApplication::quit();
 }
 
 void AppCore::onError()
 {
     qWarning()<<"Errors occurred during the upgrade process. Execution aborted.";
+    _infoVariables["status"]="has errors";
+    Logger::instance().sendToServer(QUrl(_mainCnf->value("sendLogs").toString()), _infoVariables);
+    QCoreApplication::quit();
 }
 
 /**
@@ -124,7 +139,6 @@ void AppCore::onUpdtCnfDownloaded(QTemporaryFile *cnfFile)
 
     cnfFile->close();
 
-
     qInfo()<<"All cnf files downloaded and parsed";
 
     QList<PackadgeCandidate*> toInstList;
@@ -133,13 +147,13 @@ void AppCore::onUpdtCnfDownloaded(QTemporaryFile *cnfFile)
 
     if ( prepInst<0 ) {
         qWarning()<<"Unable build versions three";
-        onComplete(false);
+        onError();
         return;
     }
 
     if ( toInstList.count()==0 ) {
         qInfo()<<"Has no updates...";
-        onComplete(true);
+        onComplete(false);
         return;
     }
 

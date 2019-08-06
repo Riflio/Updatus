@@ -20,6 +20,7 @@ INCLUDEPATH += miniSat/
 SOURCES += main.cpp \
     appcore.cpp \
     downloadmanager.cpp \
+    logger.cpp \
     miniSat/minisat/core/Solver.cc \
     packadge.cpp \
     packagecandidate.cpp \
@@ -32,6 +33,7 @@ HEADERS += \
     appcore.h \
     defines.h \
     downloadmanager.h \
+    logger.h \
     miniSat/minisat/core/Solver.h \
     packadge.h \
     packagecandidate.h \
