@@ -30,6 +30,7 @@ SOURCES += main.cpp \
 
 HEADERS += \
     appcore.h \
+    defines.h \
     downloadmanager.h \
     miniSat/minisat/core/Solver.h \
     packadge.h \

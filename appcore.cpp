@@ -1,4 +1,5 @@
 #include "appcore.h"
+#include "defines.h"
 #include <QDebug>
 
 
@@ -10,6 +11,9 @@ AppCore::AppCore(QObject *parent) : QObject(parent)
 
     connect(_collectUpdtCnfManager, &DownloadManager::answerReady, this, &AppCore::onUpdtCnfDownloaded);
     connect(_updater, &Updater::completed, this, &AppCore::onComplete);
+
+
+    qInfo()<<"UpdateManager"<<VERSION;
 
     int collectRes = collectInstalledPackadges();
 
@@ -33,6 +37,7 @@ AppCore::~AppCore()
 int AppCore::collectInstalledPackadges()
 {
     qInfo()<<"Collect info about installed packadges...";
+
 
     //-- Узнаем, какие пакеты установлены и их версии
     _mainCnf->beginReadArray("installed");
