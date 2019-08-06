@@ -16,6 +16,8 @@ public:
     explicit AppCore(QObject *parent = nullptr);
     ~AppCore();
 
+    bool upgrade(QString mainCnfPath);
+
     int collectInstalledPackadges();
     int collectAvaliableUpdates();
 

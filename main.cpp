@@ -7,7 +7,9 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-    AppCore * core = new AppCore(0);
+    AppCore * core = new AppCore(nullptr);
+
+    core->upgrade("./updateManager.cnf");
 
     return a.exec();
 }

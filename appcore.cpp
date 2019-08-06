@@ -4,8 +4,8 @@
 
 
 AppCore::AppCore(QObject *parent) : QObject(parent)
-{    
-    _mainCnf = new QSettings("./updateManager.cnf", QSettings::IniFormat, this);
+{
+
     _collectUpdtCnfManager = new DownloadManager(this);
     _updater = new Updater(this, _mainCnf);
 
@@ -13,22 +13,40 @@ AppCore::AppCore(QObject *parent) : QObject(parent)
     connect(_updater, &Updater::completed, this, &AppCore::onComplete);
 
 
-    qInfo()<<"UpdateManager"<<VERSION;
-
-    int collectRes = collectInstalledPackadges();
-
-    if (collectRes<0 ) {
-        qWarning()<<"Unable collect install packages.";
-        return;
-    }
-
-    collectAvaliableUpdates();
+    qInfo()<<"Welcome to UpdateManager"<<VERSION;
 }
 
 AppCore::~AppCore()
 {
     qDeleteAll(_instPacks);
     delete _packageSatSolver;
+}
+
+bool AppCore::upgrade(QString mainCnfPath)
+{
+    qInfo()<<"Start upgrade.";
+
+    if ( !QFile::exists(mainCnfPath) ) {
+        qWarning()<<"Configuration file not exists!";
+        return false;
+    }
+
+    _mainCnf = new QSettings(mainCnfPath, QSettings::IniFormat, this);
+
+    int collectInstRes = collectInstalledPackadges();
+
+    if ( collectInstRes<0 ) {
+        qWarning()<<"Unable collect install packages."<<collectInstRes;
+        return false;
+    }
+
+    int collectAvRes = collectAvaliableUpdates();
+    if ( collectAvRes<0 ) {
+        qWarning()<<"Unable collect avaliable packages."<<collectAvRes;
+        return false;
+    }
+
+    return true;
 }
 
 /**
