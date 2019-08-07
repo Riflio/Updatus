@@ -22,7 +22,19 @@ int main(int argc, char *argv[])
         QString("./updateManager.cnf")
     );
     parser.addOption(confFileOpt);
+
+    QCommandLineOption showLogOpt(
+        QStringList()<<"l"<<"log",
+        QObject::tr("main", "Show log")
+    );
+    parser.addOption(showLogOpt);
+
+
     parser.process(a);
+
+    if ( !parser.isSet(showLogOpt) ) {
+        Logger::instance().setQDebugWrapper();
+    }
 
     AppCore * core = new AppCore(nullptr);
 

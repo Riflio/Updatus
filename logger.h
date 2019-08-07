@@ -24,6 +24,8 @@ public:
 
     bool sendToServer(QUrl url, const QMap<QString, QVariant> &variables);
 
+    void setQDebugWrapper();
+
 signals:
 
 public slots:

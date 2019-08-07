@@ -6,7 +6,6 @@
 AppCore::AppCore(QObject *parent) : QObject(parent)
 {
     Logger::instance();
-    qInstallMessageHandler(Logger::qDebugWrapperMessageHandler);
     qInfo()<<"Welcome to Updatus - update manager for our programs."<<VERSION;
 }
 

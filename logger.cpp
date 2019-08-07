@@ -114,3 +114,11 @@ bool Logger::sendToServer(QUrl url, const QMap<QString, QVariant> &variables)
     manager->deleteLater();
     return true;
 }
+
+/**
+* @brief Устанавливаем перехватчик всех вызовов qDebug(), qInfo(), qWarning()
+*/
+void Logger::setQDebugWrapper()
+{
+    qInstallMessageHandler(Logger::qDebugWrapperMessageHandler);
+}
