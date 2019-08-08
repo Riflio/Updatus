@@ -5,6 +5,7 @@
 #include <QDateTime>
 #include <QFile>
 #include <QUrl>
+#include <QNetworkAccessManager>
 
 /**
 * @brief The Logger class
@@ -26,12 +27,19 @@ public:
 
     void setQDebugWrapper();
 
+    bool showLog;
+
 signals:
+    void newMsg(QString msg);
 
 public slots:
 
+private slots:
+    void onNetworkAnswer(QNetworkReply *reply);
+
 private:
     QFile * _logFile;
+    QNetworkAccessManager * _manager;
 
 };
 

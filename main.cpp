@@ -1,14 +1,15 @@
-#include <QCoreApplication>
-#include "appcore.h"
-#include "defines.h"
+#include <QApplication>
 #include <QCommandLineParser>
 
+#include "appcore.h"
+#include "defines.h"
+#include "mainwindow.h"
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication a(argc, argv);
-    QCoreApplication::setApplicationName("Updatus");
-    QCoreApplication::setApplicationVersion(VERSION);
+    QApplication app(argc, argv);
+    QApplication::setApplicationName("Updatus");
+    QApplication::setApplicationVersion(VERSION);
 
     QCommandLineParser parser;
     parser.setApplicationDescription("UpdateManager");
@@ -29,16 +30,27 @@ int main(int argc, char *argv[])
     );
     parser.addOption(showLogOpt);
 
+    QCommandLineOption guiOpt(
+        QStringList()<<"g"<<"gui",
+        QObject::tr("main", "Show GUI")
+    );
+    parser.addOption(guiOpt);
 
-    parser.process(a);
+    parser.process(app);
 
-    if ( !parser.isSet(showLogOpt) ) {
-        Logger::instance().setQDebugWrapper();
+    Logger::instance().setQDebugWrapper();
+
+    if ( parser.isSet(showLogOpt) ) {
+        Logger::instance().showLog = true;
     }
 
     AppCore * core = new AppCore(nullptr);
 
+    if ( !parser.isSet(guiOpt) ) {
+        core->withGui();
+    }
+
     core->upgrade(parser.value(confFileOpt));
 
-    return a.exec();
+    return app.exec();
 }

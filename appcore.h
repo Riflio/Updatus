@@ -9,6 +9,7 @@
 #include "packagesatsolver.h"
 #include "updater.h"
 #include "logger.h"
+#include "mainwindow.h"
 
 class AppCore : public QObject
 {
@@ -24,6 +25,8 @@ public:
 
     int goInstall(const QList<PackadgeCandidate*> & instList);
 
+    void withGui();
+
 signals:
     void error();
 
@@ -33,6 +36,7 @@ public slots:
 
 private slots:
     void onUpdtCnfDownloaded(QTemporaryFile * cnfFile);
+    void onUpdateCndDownloadError(QString err);
 
 private:
     QSettings * _mainCnf;
@@ -44,6 +48,9 @@ private:
     Updater * _updater;
 
     QMap<QString, QVariant> _infoVariables; //-- Собираем всё, что есть у [info] в файле конфига
+
+    MainWindow * _mainWindow;
+    bool _hasError;
 };
 
 #endif // APPCORE_H

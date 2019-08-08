@@ -1,11 +1,12 @@
 #include "appcore.h"
 #include "defines.h"
 #include <QDebug>
-#include <QCoreApplication>
+#include <QApplication>
 
-AppCore::AppCore(QObject *parent) : QObject(parent)
+AppCore::AppCore(QObject *parent) : QObject(parent), _mainWindow(nullptr), _hasError(false)
 {
     Logger::instance();
+    _packageSatSolver = new PackageSatSolver();
     qInfo()<<"Welcome to Updatus - update manager for our programs."<<VERSION;
 }
 
@@ -13,6 +14,7 @@ AppCore::~AppCore()
 {
     qDeleteAll(_instPacks);
     delete _packageSatSolver;
+    if ( !!_mainWindow ) delete _mainWindow;
 }
 
 bool AppCore::upgrade(QString mainCnfPath)
@@ -30,6 +32,7 @@ bool AppCore::upgrade(QString mainCnfPath)
     _updater = new Updater(this, _mainCnf);
 
     connect(_collectUpdtCnfManager, &DownloadManager::answerReady, this, &AppCore::onUpdtCnfDownloaded);
+    connect(_collectUpdtCnfManager, &DownloadManager::error, this, &AppCore::onUpdateCndDownloadError);
     connect(_updater, &Updater::completed, this, &AppCore::onComplete);
     connect(_updater, &Updater::error, this, &AppCore::onError);
 
@@ -94,6 +97,12 @@ int AppCore::collectAvaliableUpdates() //TODO: Сделать возможнос
     return 1;
 }
 
+void AppCore::withGui()
+{
+    _mainWindow = new MainWindow(nullptr);
+    _mainWindow->show();
+}
+
 void AppCore::onComplete(bool newInstalled)
 {
     //-- Записываем дату последнего обновления и время и отсылаем лог
@@ -107,15 +116,17 @@ void AppCore::onComplete(bool newInstalled)
     _infoVariables["hasNewInstalled"]=(newInstalled)? "yes" : "no";
 
     Logger::instance().sendToServer(QUrl(_mainCnf->value("sendLogs").toString()), _infoVariables);
-    QCoreApplication::quit();
+    if ( !_mainWindow ) QApplication::quit();
 }
 
 void AppCore::onError()
 {
+    if ( _hasError ) return; //-- Нам и одной уже достаточно
+    _hasError = true;
     qWarning()<<"Errors occurred during the upgrade process. Execution aborted.";
     _infoVariables["status"]="has errors";
     Logger::instance().sendToServer(QUrl(_mainCnf->value("sendLogs").toString()), _infoVariables);
-    QCoreApplication::quit();
+    if ( !_mainWindow ) QApplication::quit();
 }
 
 /**
@@ -157,6 +168,12 @@ void AppCore::onUpdtCnfDownloaded(QTemporaryFile *cnfFile)
     }
 
     _updater->goInstall(toInstList);
+}
+
+void AppCore::onUpdateCndDownloadError(QString err)
+{
+    qWarning()<<"Unable download update cnf"<<err;
+    onError();
 }
 
 

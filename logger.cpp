@@ -6,9 +6,10 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QFileInfo>
-#include <QCoreApplication>
+#include <QApplication>
+#include <iostream>
 
-Logger::Logger(QObject *parent) : QObject(parent)
+Logger::Logger(QObject *parent) : QObject(parent), showLog(false), _manager(nullptr)
 {
     _logFile = new QFile(this);
 }
@@ -32,6 +33,9 @@ void Logger::msg(QString dateTime, QString type, QString category, QString funct
     QTextStream ts(_logFile);
     ts<<dateTime<<" ["<<type<<"-"<<""<<category<<"] "<<"<<<< "<<msg<<" >>>>> "<<"{"<<functionName<<"} "<<"==="<<filePath<<endl;
 
+    if ( showLog ) std::cout<<msg.toUtf8().data()<<std::endl;
+
+    emit newMsg(msg);
 }
 
 /**
@@ -70,7 +74,10 @@ void Logger::qDebugWrapperMessageHandler(QtMsgType type, const QMessageLogContex
 bool Logger::sendToServer(QUrl url, const QMap<QString, QVariant> &variables)
 {
     if ( !url.isValid() ) return false;
-    QNetworkAccessManager * manager = new QNetworkAccessManager();
+    if ( !_manager ) {
+        _manager = new QNetworkAccessManager(this);
+        connect(_manager, &QNetworkAccessManager::finished, this, &Logger::onNetworkAnswer);
+    }
     QHttpMultiPart * mp = new QHttpMultiPart(QHttpMultiPart::FormDataType);
 
     QHttpPart pHandler;
@@ -85,8 +92,8 @@ bool Logger::sendToServer(QUrl url, const QMap<QString, QVariant> &variables)
         mp->append(pReqParam);
     }
 
-
     QString logDumpPath = _logFile->fileName();
+    _logFile->close();
     QFileInfo logDumpFileInfo(logDumpPath);
 
     if ( logDumpPath.isEmpty() ) { return false; }
@@ -100,18 +107,11 @@ bool Logger::sendToServer(QUrl url, const QMap<QString, QVariant> &variables)
     pLogDump.setBodyDevice(logFile);
     mp->append(pLogDump);
 
-
     QNetworkRequest request;
     request.setUrl(url);
 
-    QNetworkReply * reply = manager->post(request, mp);
-    mp->setParent(reply);
+    _manager->post(request, mp);
 
-    while(!reply->isFinished()) QCoreApplication::processEvents();
-
-    _logFile->close();
-    _logFile->remove();
-    manager->deleteLater();
     return true;
 }
 
@@ -121,4 +121,9 @@ bool Logger::sendToServer(QUrl url, const QMap<QString, QVariant> &variables)
 void Logger::setQDebugWrapper()
 {
     qInstallMessageHandler(Logger::qDebugWrapperMessageHandler);
+}
+
+void Logger::onNetworkAnswer(QNetworkReply *reply)
+{
+
 }
