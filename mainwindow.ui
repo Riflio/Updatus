@@ -57,14 +57,14 @@
       <item>
        <widget class="QLabel" name="lblCurrentActionDescr">
         <property name="text">
-         <string>Что делаем:</string>
+         <string>Состояние:</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QLabel" name="lblCurrentAction">
         <property name="text">
-         <string>что-то</string>
+         <string>...</string>
         </property>
        </widget>
       </item>
@@ -86,7 +86,7 @@
     <item>
      <widget class="QProgressBar" name="progress">
       <property name="value">
-       <number>24</number>
+       <number>0</number>
       </property>
      </widget>
     </item>

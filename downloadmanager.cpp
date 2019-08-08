@@ -20,7 +20,7 @@ int DownloadManager::request(QUrl url)
 
     connect(reply, QOverload<QNetworkReply::NetworkError>::of(&QNetworkReply::error), this, &DownloadManager::onNetworkError);
     connect(reply, &QNetworkReply::sslErrors, this, &DownloadManager::onNetworkErrorSsl);
-
+    connect(reply, &QNetworkReply::downloadProgress, this, &DownloadManager::onProgressChanged);
     return  1;
 }
 
@@ -30,7 +30,6 @@ int DownloadManager::request(QUrl url)
 */
 void DownloadManager::onNetworkAnswer(QNetworkReply *reply)
 {
-
     if(reply->error()){
         emit error(reply->errorString());
         return;
@@ -57,4 +56,12 @@ void DownloadManager::onNetworkError(QNetworkReply::NetworkError err)
 void DownloadManager::onNetworkErrorSsl(const QList<QSslError> &errors)
 {
     emit error(QString("Network ssl error"));
+}
+
+void DownloadManager::onProgressChanged(int bytesReceived, int bytesTotal)
+{
+    double pr = static_cast<double>(bytesReceived)*100.0/bytesTotal;
+    int prR = qRound(pr);
+    if ( prR<pr ) prR++;
+    emit progress(prR, bytesReceived);
 }

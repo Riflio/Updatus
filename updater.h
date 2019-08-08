@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QSettings>
+#include <QTimer>
 
 #include "packadge.h"
 #include "downloadmanager.h"
@@ -33,9 +34,12 @@ public:
 
     void download();
 
+    int downloadProgress() const;
+
 private slots:
     void onDownloadComplete(QTemporaryFile * packetFile);
     void onDownloadError(QString err);
+    void onDownloadProgress(int pr, int bytes);
 
 signals:
     void error();
@@ -46,9 +50,9 @@ private:
     DownloadManager * _dlMr;
     QString _cachePacketPath;
     QString _tempDir;
+    int _dwnProgress;
 
 };
-
 
 class Updater : public QObject
 {
@@ -63,12 +67,14 @@ public:
 signals:
     void error();
     void completed(bool newInstalled);
+    void progress(int pr);
 
 public slots:
 
 private slots:
     void onPacketDownloaded(PackadgeCandidateUpdater * pack);
     void onPacketDownloadError();
+    void recalcDownloadProgress();
 
 private:
     void allPacketsDownloaded();
@@ -78,6 +84,8 @@ private:
     QHash<QString, PackadgeCandidateUpdater*> _updaterPackages;
     QSettings * _mainCnf;
     bool _hasError;
+    QTimer _recalcDwnPrTr;
+    long _totalProgress;
 
 };
 

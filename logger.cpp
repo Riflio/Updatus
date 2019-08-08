@@ -126,5 +126,6 @@ void Logger::setQDebugWrapper()
 
 void Logger::onNetworkAnswer(QNetworkReply *reply)
 {
-
+    Q_UNUSED(reply)
+    QFile::remove(_logFile->fileName());
 }

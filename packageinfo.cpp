@@ -19,6 +19,8 @@ PackadgeInfo::PackadgeInfo(QString name, QString version, QSettings &cnf)
     } else {
         _instType = asManual;
     }
+
+    _fileSize = cnf.value(QString("%1/size").arg(fullName()), -1).toInt();
 }
 
 QString PackadgeInfo::path() const
@@ -64,6 +66,11 @@ QString PackadgeInfo::fullName() const
 int PackadgeInfo::instType() const
 {
     return _instType;
+}
+
+long PackadgeInfo::fileSize() const
+{
+    return _fileSize;
 }
 
 QString PackadgeInfo::makeFullName(QString name, QString version)

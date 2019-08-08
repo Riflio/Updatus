@@ -11,7 +11,9 @@ PackadgeCandidateUpdater::PackadgeCandidateUpdater(const PackadgeCandidate &othe
 
     _dlMr = new DownloadManager();
     connect(_dlMr, &DownloadManager::answerReady, this, &PackadgeCandidateUpdater::onDownloadComplete);
-    connect(_dlMr, &DownloadManager::error, this, &PackadgeCandidateUpdater::onDownloadError);
+    connect(_dlMr, &DownloadManager::error, this, &PackadgeCandidateUpdater::onDownloadError);    
+    connect(_dlMr, &DownloadManager::progress, this, &PackadgeCandidateUpdater::onDownloadProgress);
+
 }
 
 void PackadgeCandidateUpdater::addStatus(int status)
@@ -31,8 +33,14 @@ QString PackadgeCandidateUpdater::cachePacketPath() const
 
 void PackadgeCandidateUpdater::download()
 {
+    _dwnProgress = 0;
     _dlMr->request(QUrl(downloadUrl()));
     addStatus(US_REQUESTED);
+}
+
+int PackadgeCandidateUpdater::downloadProgress() const
+{
+    return  _dwnProgress;
 }
 
 void PackadgeCandidateUpdater::onDownloadComplete(QTemporaryFile * packetFile)
@@ -77,6 +85,12 @@ void PackadgeCandidateUpdater::onDownloadError(QString err)
     emit error();
 }
 
+void PackadgeCandidateUpdater::onDownloadProgress(int pr, int bytes)
+{
+    Q_UNUSED(pr);
+    _dwnProgress = bytes;
+}
+
 
 //========================================================================================================
 
@@ -84,6 +98,9 @@ Updater::Updater(QObject *parent, QSettings * mainCnf)
     : QObject(parent), _mainCnf(mainCnf), _hasError(false)
 {
     //TODO: Проверять существование tempDir и доступность для записи/чтения
+
+    _recalcDwnPrTr.setInterval(1000);
+    connect(&_recalcDwnPrTr, &QTimer::timeout, this, &Updater::recalcDownloadProgress);
 }
 
 /**
@@ -95,6 +112,9 @@ int Updater::goInstall(const QList<PackadgeCandidate *> & instList)
 {
     qInfo()<<"Go install";
 
+    _updaterPackages.clear();
+    _totalProgress = 0;
+
     foreach(PackadgeCandidate * cnd, instList) {
 
         if ( _hasError ) return  -1;
@@ -105,7 +125,14 @@ int Updater::goInstall(const QList<PackadgeCandidate *> & instList)
         _updaterPackages.insert(cnd->fullName(), pcu);
 
         connect(pcu, &PackadgeCandidateUpdater::packageDownloaded, this, &Updater::onPacketDownloaded);
-        connect(pcu, &PackadgeCandidateUpdater::error, this, &Updater::onPacketDownloadError);
+        connect(pcu, &PackadgeCandidateUpdater::error, this, &Updater::onPacketDownloadError);        
+
+        _totalProgress += pcu->fileSize();
+    }
+
+    _recalcDwnPrTr.start();
+
+    foreach(PackadgeCandidateUpdater * pcu, _updaterPackages) {
         pcu->download();
     }
 
@@ -119,6 +146,7 @@ void Updater::goComplete(bool newInstalled)
 
 void Updater::goError()
 {
+    _recalcDwnPrTr.stop();
     _hasError = true;
     emit error();
 }
@@ -147,11 +175,31 @@ void Updater::onPacketDownloadError()
 }
 
 /**
+* @brief Пересчитаем прогресс скачивания
+*/
+void Updater::recalcDownloadProgress()
+{
+    long current = 0;
+    foreach(PackadgeCandidateUpdater * pcu, _updaterPackages) {
+        current += pcu->downloadProgress();
+    }
+
+
+    double pr = static_cast<double>(current)*100.0/_totalProgress;
+    int prR = qRound(pr);
+    if ( prR<pr ) prR++;
+
+    emit progress(prR);
+}
+
+/**
 * @brief Все пакеты загружены
 */
 void Updater::allPacketsDownloaded()
 {
     qInfo()<<"All packages downloaded!";
+    _recalcDwnPrTr.stop();
+    emit progress(100);
     removeOldInstallNew();
 }
 

@@ -27,8 +27,12 @@ public:
 
     void withGui();
 
+    void newStatus(QString msg, int mode);
+
 signals:
     void error();
+    void progress(int pr);
+    void statusChanged(QString msg, int mode);
 
 public slots:
     void onComplete(bool newInstalled);
@@ -37,6 +41,7 @@ public slots:
 private slots:
     void onUpdtCnfDownloaded(QTemporaryFile * cnfFile);
     void onUpdateCndDownloadError(QString err);
+    void onProgress(int pr);
 
 private:
     QSettings * _mainCnf;

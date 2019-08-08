@@ -21,11 +21,13 @@ public:
 signals:
     void answerReady(QTemporaryFile * tempFile);
     void error(QString msg);
+    void progress(int pr, int bytes);
 
 private slots:
     void onNetworkAnswer(QNetworkReply *reply);
     void onNetworkError(QNetworkReply::NetworkError err);
     void onNetworkErrorSsl(const QList<QSslError> &errors);
+    void onProgressChanged(int bytesReceived, int bytesTotal);
 
 private:
     QNetworkAccessManager * _naManager;
