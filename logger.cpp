@@ -36,6 +36,7 @@ void Logger::msg(QString dateTime, QString type, QString category, QString funct
     if ( showLog ) std::cout<<msg.toUtf8().data()<<std::endl;
 
     emit newMsg(msg);
+
 }
 
 /**

@@ -51,6 +51,7 @@ private:
 
     MainWindow * _mainWindow;
     bool _hasError;
+
 };
 
 #endif // APPCORE_H
