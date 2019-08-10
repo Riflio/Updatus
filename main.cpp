@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
         QStringList() << "c" << "conffile",
         QObject::tr("main", "Set configuration file to <configfile.cnf>."),
         QObject::tr("main", "configfile"),
-        QString("./updateManager.cnf")
+        QString("./Updatus.cnf")
     );
     parser.addOption(confFileOpt);
 
