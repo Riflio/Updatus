@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 
     AppCore * core = new AppCore(nullptr);
 
-    if ( !parser.isSet(guiOpt) ) {
+    if ( parser.isSet(guiOpt) ) {
         core->withGui();
     }
 
