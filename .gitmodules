@@ -1,0 +1,3 @@
+[submodule "miniSat"]
+      path = miniSat
+      url = https://github.com/Riflio/minisat
