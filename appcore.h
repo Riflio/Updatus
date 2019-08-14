@@ -26,8 +26,14 @@ public:
     int goInstall(const QList<PackadgeCandidate*> & instList);
 
     void withGui();
+    void autoQuit(bool st);
 
     void newStatus(QString msg, int mode);
+
+    bool runAfter(QString path);
+
+    void quit();
+
 
 signals:
     void error();
@@ -56,6 +62,7 @@ private:
 
     MainWindow * _mainWindow;
     bool _hasError;
+    bool _autoQuit;
 
 };
 
@@ -71,6 +78,7 @@ lastUpdated=07.08.19 01:23 #date and time last seccessful update
 sendLogs=http://site.dev/updatus/handler/logHandler.php #url to send logs (see ServerHandler directory)
 tempDir=./updateCache/ #dir to store updates
 version=1.0 #this version
+runAfter= #program to start after run Updatus
 
 [servers] #Servers list, with updates (see repository.cnf)
 main=http://suvenirus.dev/updatemanager/ #At now version, only one avaliable

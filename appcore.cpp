@@ -2,8 +2,10 @@
 #include "defines.h"
 #include <QDebug>
 #include <QApplication>
+#include <QProcess>
 
-AppCore::AppCore(QObject *parent) : QObject(parent), _mainWindow(nullptr), _hasError(false)
+AppCore::AppCore(QObject *parent)
+    :QObject(parent), _mainWindow(nullptr), _hasError(false), _autoQuit(false)
 {
     Logger::instance();
     _packageSatSolver = new PackageSatSolver();    
@@ -106,6 +108,15 @@ void AppCore::withGui()
     _mainWindow->show();
 }
 
+/**
+* @brief Отмечаем, нужно ли сразу выходить после завершения
+* @param st
+*/
+void AppCore::autoQuit(bool st)
+{
+    _autoQuit = st;
+}
+
 void AppCore::newStatus(QString msg, int mode)
 {
     switch (mode) {
@@ -117,23 +128,48 @@ void AppCore::newStatus(QString msg, int mode)
     emit statusChanged(msg, mode);
 }
 
+/**
+* @brief Запускаем указанную программу после проверки обновлений
+* @param path
+*/
+bool AppCore::runAfter(QString path)
+{
+    if ( path.isEmpty() ) return false;
+    qInfo()<<"Run after"<<path;
+
+    bool st = QProcess::startDetached(path);
+
+    return st;
+}
+
+/**
+* @brief Выходим
+*/
+void AppCore::quit()
+{
+    runAfter(_mainCnf->value("runAfter").toString());
+
+    _mainCnf->sync();
+
+    Logger::instance().sendToServer(QUrl(_mainCnf->value("sendLogs").toString()), _infoVariables);
+
+    if ( _autoQuit || !_mainWindow ) QApplication::quit();
+}
+
 void AppCore::onComplete(bool newInstalled)
 {
     newStatus(tr("Complete!"), 1);
     onProgress(100);
 
-    //-- Записываем дату последнего обновления и время и отсылаем лог
+    //-- Записываем дату и время последнего обновления, когда что-то было установлено
     if ( newInstalled ) {
         _mainCnf->setValue("lastUpdated", QDateTime::currentDateTime().toString("dd.MM.yy hh:mm"));
     }
 
-    _mainCnf->sync();
-    _infoVariables["status"]="OK";
-    _infoVariables["hasNewInstalled"]=(newInstalled)? "yes" : "no";
+    _infoVariables["status"] = "OK";
+    _infoVariables["hasNewInstalled"] = (newInstalled)? "yes" : "no";
 
-    Logger::instance().sendToServer(QUrl(_mainCnf->value("sendLogs").toString()), _infoVariables);
-
-    if ( !_mainWindow ) QApplication::quit();
+    quit();
 }
 
 void AppCore::onError()
@@ -141,9 +177,9 @@ void AppCore::onError()
     if ( _hasError ) return; //-- Нам и одной уже достаточно
     _hasError = true;
     newStatus(tr("Errors occurred during the upgrade process. Execution aborted."), -1);
-    _infoVariables["status"]="has errors";
-    Logger::instance().sendToServer(QUrl(_mainCnf->value("sendLogs").toString()), _infoVariables);
-    if ( !_mainWindow ) QApplication::quit();
+    _infoVariables["status"] = "has errors";
+
+    quit();
 }
 
 /**

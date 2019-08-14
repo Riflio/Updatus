@@ -3,6 +3,7 @@
 #include "defines.h"
 #include <QNetworkRequest>
 #include <QFile>
+#include <QDebug>
 
 DownloadManager::DownloadManager(QObject *parent) : QObject(parent)
 {
@@ -19,7 +20,7 @@ int DownloadManager::request(QUrl url)
     QNetworkReply *reply = _naManager->get(request);
 
     connect(reply, QOverload<QNetworkReply::NetworkError>::of(&QNetworkReply::error), this, &DownloadManager::onNetworkError);
-    connect(reply, &QNetworkReply::sslErrors, this, &DownloadManager::onNetworkErrorSsl);
+    //connect(reply, &QNetworkReply::sslErrors, this, &DownloadManager::onNetworkErrorSsl);
     connect(reply, &QNetworkReply::downloadProgress, this, &DownloadManager::onProgressChanged);
     return  1;
 }

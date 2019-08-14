@@ -7,13 +7,10 @@
 PackadgeCandidateUpdater::PackadgeCandidateUpdater(const PackadgeCandidate &other, QString tempDir):
     PackadgeCandidate(other), _status(US_NONE), _tempDir(tempDir)
 {
-    if ( _tempDir.right(1)=="/" ) _tempDir = _tempDir.left(_tempDir.length()-1);
-
     _dlMr = new DownloadManager();
     connect(_dlMr, &DownloadManager::answerReady, this, &PackadgeCandidateUpdater::onDownloadComplete);
     connect(_dlMr, &DownloadManager::error, this, &PackadgeCandidateUpdater::onDownloadError);    
     connect(_dlMr, &DownloadManager::progress, this, &PackadgeCandidateUpdater::onDownloadProgress);
-
 }
 
 void PackadgeCandidateUpdater::addStatus(int status)
@@ -49,20 +46,20 @@ void PackadgeCandidateUpdater::onDownloadComplete(QTemporaryFile * packetFile)
 
     //TODO: Сверять контрольные суммы первым делом
 
-    QString cachePath = _tempDir+QDir::separator()+pathDir();
-    QDir dir;
+    QDir tempDir(_tempDir);
+    tempDir.cd(pathDir());
 
-    if ( !dir.exists(cachePath) ) {
-        dir.mkpath(cachePath);
+    if ( !tempDir.exists() ) {
+        tempDir.mkpath(tempDir.absolutePath());
     }
 
-    if ( !dir.exists(cachePath) ) {
-        qWarning()<<"Can not create cache path"<<cachePath;
+    if ( !tempDir.exists() ) {
+        qWarning()<<"Can not create cache path"<<tempDir.absolutePath();
         emit error();
         return;
     }
 
-    QString cfn = cachePath+pathFileName();
+    QString cfn = tempDir.filePath(pathFileName());
 
     if ( !QFile::exists(cfn)) {
         if ( !packetFile->copy(cfn) ) {
@@ -229,7 +226,7 @@ void Updater::removeOldInstallNew()
                     QList<QZipReader::FileInfo> oldFiles = zipRem.fileInfoList();
                     foreach (QZipReader::FileInfo fi, oldFiles) {
                         if ( fi.isDir ) instDir.remove(fi.filePath);
-                        if ( fi.isFile ) QFile::remove(instDir.path()+QDir::separator()+fi.filePath);
+                        if ( fi.isFile ) QFile::remove(instDir.filePath(fi.filePath));
                     }
                     zipRem.close();
                 }
@@ -260,7 +257,7 @@ void Updater::removeOldInstallNew()
         //-- Создаём пути для файлов и устанавливаем права
         foreach (QZipReader::FileInfo fi, allFiles) {
             if ( !fi.isDir ) continue;
-            QString absPath = instDir.path()+QDir::separator()+fi.filePath;
+            QString absPath = instDir.filePath(fi.filePath);
             if ( !instDir.mkpath(fi.filePath) ) { emit error(); return; }
             //if ( !QFile::setPermissions(absPath, fi.permissions) ) { emit error(); return; }
         }
@@ -269,7 +266,7 @@ void Updater::removeOldInstallNew()
         foreach (QZipReader::FileInfo fi, allFiles) {
             if ( !fi.isFile) continue;
 
-            QString absPath = instDir.path()+QDir::separator()+fi.filePath;
+            QString absPath = instDir.filePath(fi.filePath);
             qInfo()<<"Unpack file"<<absPath;
 
             QFile file(absPath);

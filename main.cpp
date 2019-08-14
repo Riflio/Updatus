@@ -36,6 +36,13 @@ int main(int argc, char *argv[])
     );
     parser.addOption(guiOpt);
 
+    QCommandLineOption autoQuitOpt(
+        QStringList()<<"q"<<"quit",
+        QObject::tr("main", "Quit after complete")
+    );
+    parser.addOption(autoQuitOpt);
+
+
     parser.process(app);
 
     Logger::instance().setQDebugWrapper();
@@ -48,6 +55,10 @@ int main(int argc, char *argv[])
 
     if ( parser.isSet(guiOpt) ) {
         core->withGui();
+    }
+
+    if ( parser.isSet(autoQuitOpt) ) {
+        core->autoQuit(true);
     }
 
     core->upgrade(parser.value(confFileOpt));
