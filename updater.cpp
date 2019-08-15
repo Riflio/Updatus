@@ -216,6 +216,16 @@ void Updater::removeOldInstallNew()
         Packadge * orPack = up->originalPackage();
         QDir instDir = (orPack!=nullptr && !orPack->path().isEmpty())? orPack->path() : QDir(defaultInstPath);
 
+        if ( !instDir.exists() ) {
+            instDir.mkpath(instDir.absolutePath());
+        }
+
+        if ( !instDir.exists() ) {
+            qWarning()<<"Unable create installation dir:"<<instDir.absolutePath();
+            emit error();
+            return;
+        }
+
         if ( orPack!=nullptr ) {
             qInfo()<<"Remove old version"<<orPack->fullName();
             QString cachePath = _mainCnf->value(QString("%1/cachePath").arg(orPack->fullName())).toString();
@@ -247,8 +257,9 @@ void Updater::removeOldInstallNew()
         qInfo()<<"Unpacking"<<up->fullName();
 
         QZipReader zip(up->cachePacketPath(), QIODevice::ReadOnly);
-        if( !zip.exists() ) {
+        if( !zip.exists() ) {            
             qWarning()<<"Package not exist O_o";
+            emit error();
             return;
         }
 
@@ -257,7 +268,6 @@ void Updater::removeOldInstallNew()
         //-- Создаём пути для файлов и устанавливаем права
         foreach (QZipReader::FileInfo fi, allFiles) {
             if ( !fi.isDir ) continue;
-            QString absPath = instDir.filePath(fi.filePath);
             if ( !instDir.mkpath(fi.filePath) ) { emit error(); return; }
             //if ( !QFile::setPermissions(absPath, fi.permissions) ) { emit error(); return; }
         }
