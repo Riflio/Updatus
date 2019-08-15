@@ -79,6 +79,7 @@ sendLogs=http://site.dev/updatus/handler/logHandler.php #url to send logs (see S
 tempDir=./updateCache/ #dir to store updates
 version=1.0 #this version
 runAfter= #program to start after run Updatus
+logDir= #directory to logs
 
 [servers] #Servers list, with updates (see repository.cnf)
 main=http://suvenirus.dev/updatemanager/ #At now version, only one avaliable

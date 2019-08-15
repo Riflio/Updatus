@@ -30,6 +30,8 @@ bool AppCore::upgrade(QString mainCnfPath)
 
     _mainCnf = new QSettings(mainCnfPath, QSettings::IniFormat, this);
 
+    if ( !_mainCnf->value("logDir").toString().isEmpty() ) Logger::instance().setLogDir(_mainCnf->value("logDir").toString());
+
     _collectUpdtCnfManager = new DownloadManager(this);
     _updater = new Updater(this, _mainCnf);
 

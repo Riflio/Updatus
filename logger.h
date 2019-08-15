@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QUrl>
 #include <QNetworkAccessManager>
+#include <QDir>
 
 /**
 * @brief The Logger class
@@ -19,7 +20,7 @@ class Logger : public QObject
 public:
     explicit Logger(QObject *parent = nullptr);
     static Logger & instance();
-    void msg(QString dateTime, QString type, QString category, QString functionName, QString filePath, QString msg);
+    bool msg(QString dateTime, QString type, QString category, QString functionName, QString filePath, QString msg);
 
     static void qDebugWrapperMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString &msg);
 
@@ -28,6 +29,8 @@ public:
     void setQDebugWrapper();
 
     bool showLog;
+
+    void setLogDir(QString logDir);
 
 signals:
     void newMsg(QString msg);
@@ -40,7 +43,9 @@ private slots:
 private:
     QFile * _logFile;
     QNetworkAccessManager * _manager;
+    QDir _logDir;
 
+    static const QtMessageHandler QT_DEFAULT_MESSAGE_HANDLER;
 };
 
 #endif // LOGGER_H

@@ -42,8 +42,14 @@ int main(int argc, char *argv[])
     );
     parser.addOption(autoQuitOpt);
 
-
     parser.process(app);
+
+    if ( parser.isSet(showLogOpt) && !parser.value(showLogOpt).isEmpty() ) {
+        Logger::instance().setLogDir(parser.value(showLogOpt));
+    } else {
+        Logger::instance().setLogDir(QApplication::applicationDirPath());
+    }
+
 
     Logger::instance().setQDebugWrapper();
 

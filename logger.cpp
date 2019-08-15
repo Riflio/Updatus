@@ -9,6 +9,8 @@
 #include <QApplication>
 #include <iostream>
 
+const QtMessageHandler Logger::QT_DEFAULT_MESSAGE_HANDLER = qInstallMessageHandler(0);
+
 Logger::Logger(QObject *parent) : QObject(parent), showLog(false), _manager(nullptr)
 {
     _logFile = new QFile(this);
@@ -23,11 +25,13 @@ Logger &Logger::instance()
     return *_instance;
 }
 
-void Logger::msg(QString dateTime, QString type, QString category, QString functionName, QString filePath, QString msg)
+bool Logger::msg(QString dateTime, QString type, QString category, QString functionName, QString filePath, QString msg)
 {
     if ( !_logFile->isOpen() ) {
-        _logFile->setFileName(QString("%1/log-%2.log").arg(".").arg(QDateTime::currentDateTime().toString("dd.MM.yy_h:mm:ss:zzz")));
+        _logFile->setFileName(_logDir.filePath(QString("log-%2.log").arg(QDateTime::currentDateTime().toString("ddMMyyhmmsszzz"))));
         _logFile->open(QIODevice::WriteOnly | QIODevice::Append);
+
+        if ( !_logFile->isOpen() ) return false;
     }
 
     QTextStream ts(_logFile);
@@ -37,6 +41,7 @@ void Logger::msg(QString dateTime, QString type, QString category, QString funct
 
     emit newMsg(msg);
 
+    return true;
 }
 
 /**
@@ -56,7 +61,7 @@ void Logger::qDebugWrapperMessageHandler(QtMsgType type, const QMessageLogContex
         case QtFatalMsg: sType = "FATAL"; break;
     }
 
-    Logger::instance().msg(
+    bool lm =Logger::instance().msg(
         QDateTime::currentDateTime().toString("yyyyMMdd h:mm:ss.zzz"),
         sType,
         context.category,
@@ -64,6 +69,10 @@ void Logger::qDebugWrapperMessageHandler(QtMsgType type, const QMessageLogContex
         context.file,
         msg
     );
+
+    if ( !lm ) {
+        (*QT_DEFAULT_MESSAGE_HANDLER)(type, context, msg);
+    }
 }
 
 /**
@@ -122,6 +131,19 @@ bool Logger::sendToServer(QUrl url, const QMap<QString, QVariant> &variables)
 void Logger::setQDebugWrapper()
 {
     qInstallMessageHandler(Logger::qDebugWrapperMessageHandler);
+}
+
+void Logger::setLogDir(QString logDir)
+{
+    _logDir.setPath(logDir);
+    if ( !_logDir.exists() ) {
+        _logDir.mkpath(_logDir.absolutePath());
+    }
+
+    if ( _logFile->isOpen() ) {
+        _logFile->close();
+        _logFile->remove();
+    }
 }
 
 void Logger::onNetworkAnswer(QNetworkReply *reply)
