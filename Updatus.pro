@@ -51,3 +51,9 @@ RESOURCES +=
 
 FORMS += \
     mainwindow.ui
+
+RC_FILE = res.rc
+
+DISTFILES += \
+    res.rc \
+    res.rc
