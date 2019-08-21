@@ -32,7 +32,7 @@ void MainWindow::on_logBtnShow_clicked()
 
 void MainWindow::onNewMsg(QString msg)
 {
-    ui->logListView->addItem(msg);
+    ui->logListView->insertItem(0, msg);
 }
 
 void MainWindow::onProgressChanged(int pr)

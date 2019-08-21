@@ -40,6 +40,29 @@ int PackadgeCandidateUpdater::downloadProgress() const
     return  _dwnProgress;
 }
 
+/**
+* @brief Проверяем, есть ли у нас право изменять файл
+* @param path
+*/
+bool Updater::checkFileAccess(QString path) const
+{
+    QFile f(path);
+    if ( !f.open(QIODevice::WriteOnly) ) return false;
+
+    f.close();
+    return true;
+}
+
+/**
+* @brief Проверяем, можем ли получить доступ к директории (записывать в неё)
+* @param path
+* @return
+*/
+bool Updater::checkFolderAccess(QString path) const
+{
+    return true; //TODO: Сделать
+}
+
 void PackadgeCandidateUpdater::onDownloadComplete(QTemporaryFile * packetFile)
 {
     qInfo()<<"Candidate downloaded"<<fullName();
@@ -201,7 +224,8 @@ void Updater::allPacketsDownloaded()
 }
 
 /**
-* @brief Удаляем предыдущие установленные пакеты, к которым скачали обновления
+* @brief Удаляем предыдущие, устанавливаем новые пакеты (точнее, файлы из них)
+*
 */
 void Updater::removeOldInstallNew()
 {
@@ -211,6 +235,7 @@ void Updater::removeOldInstallNew()
 
     //TODO: Удаляем пакеты, которые были установлены как зависимости и больше не требуются
 
+    //-- Пробегаемся по кандидатам на установку, проверяем, что бы было можно все поставить, иначе до лучших времён отложим
     foreach(PackadgeCandidateUpdater * up, _updaterPackages) {
 
         Packadge * orPack = up->originalPackage();
@@ -226,6 +251,76 @@ void Updater::removeOldInstallNew()
             return;
         }
 
+        //-- Удалим файлы из старой версии пакета
+        if ( orPack!=nullptr ) {
+            QString cachePath = _mainCnf->value(QString("%1/cachePath").arg(orPack->fullName())).toString();
+            if ( !cachePath.isEmpty() ) { //-- Проверяем возможность удалить файлы прежних версий
+
+                QZipReader zipRem(cachePath, QIODevice::ReadOnly);
+                if ( zipRem.exists() ) {
+                    QList<QZipReader::FileInfo> oldFiles = zipRem.fileInfoList();
+                    foreach (QZipReader::FileInfo fi, oldFiles) {
+                        if ( fi.isDir ) {
+                            if ( !checkFolderAccess(fi.filePath) ) {
+                                qWarning()<<"Has no access right to:"<<fi.filePath;
+                                emit error();
+                                return;
+                            }
+                        }
+                        if ( fi.isFile ) {
+                            QString oldFp = instDir.filePath(fi.filePath);
+                            if ( !checkFileAccess(oldFp) ) {
+                                qWarning()<<"Has no access tight to:"<<oldFp;
+                                emit error();
+                                return;
+                            }
+                        }
+                    }
+                    zipRem.close();
+                }
+
+            }
+
+        }
+
+        QZipReader zip(up->cachePacketPath(), QIODevice::ReadOnly);
+        if( !zip.exists() ) {            
+            qWarning()<<"Package not exist O_o"<<up->cachePacketPath();
+            emit error();
+            return;
+        }
+
+        QList<QZipReader::FileInfo> allFiles = zip.fileInfoList();
+
+        //-- Создаём пути для файлов и устанавливаем права
+        foreach (QZipReader::FileInfo fi, allFiles) {
+            if ( !fi.isDir ) continue;            
+            if ( !instDir.mkpath(fi.filePath) ) { qWarning()<<"Unable create file path"<<fi.filePath; emit error(); return; }
+            //if ( !QFile::setPermissions(absPath, fi.permissions) ) { emit error(); return; }
+        }
+
+        //-- По путям проверяем возможность записать файлы
+        foreach (QZipReader::FileInfo fi, allFiles) {
+            if ( !fi.isFile) continue;
+            QString absPath = instDir.filePath(fi.filePath);
+            if ( !checkFileAccess(absPath) ) {
+                qWarning()<<"Has no access right"<<absPath;
+                emit error();
+                return;
+            }
+        }
+
+        zip.close();
+    }
+
+
+    //-- Всё вроде ок, можно ставить новые
+    foreach(PackadgeCandidateUpdater * up, _updaterPackages) {
+
+        Packadge * orPack = up->originalPackage();
+        QDir instDir = (orPack!=nullptr && !orPack->path().isEmpty())? orPack->path() : QDir(defaultInstPath);
+
+        //-- Удалим файлы из старой версии пакета
         if ( orPack!=nullptr ) {
             qInfo()<<"Remove old version"<<orPack->fullName();
             QString cachePath = _mainCnf->value(QString("%1/cachePath").arg(orPack->fullName())).toString();
@@ -257,22 +352,10 @@ void Updater::removeOldInstallNew()
         qInfo()<<"Unpacking"<<up->fullName();
 
         QZipReader zip(up->cachePacketPath(), QIODevice::ReadOnly);
-        if( !zip.exists() ) {            
-            qWarning()<<"Package not exist O_o";
-            emit error();
-            return;
-        }
 
         QList<QZipReader::FileInfo> allFiles = zip.fileInfoList();
 
-        //-- Создаём пути для файлов и устанавливаем права
-        foreach (QZipReader::FileInfo fi, allFiles) {
-            if ( !fi.isDir ) continue;
-            if ( !instDir.mkpath(fi.filePath) ) { emit error(); return; }
-            //if ( !QFile::setPermissions(absPath, fi.permissions) ) { emit error(); return; }
-        }
-
-        //-- По путям закидываем файлы
+        //-- Закидываем файлы
         foreach (QZipReader::FileInfo fi, allFiles) {
             if ( !fi.isFile) continue;
 

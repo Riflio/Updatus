@@ -64,6 +64,9 @@ public:
     void goError();
     void goComplete(bool newInstalled);
 
+    bool checkFileAccess(QString path) const;
+    bool checkFolderAccess(QString path) const;
+
 signals:
     void error();
     void completed(bool newInstalled);

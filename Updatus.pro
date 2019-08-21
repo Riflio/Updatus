@@ -57,3 +57,5 @@ RC_FILE = res.rc
 DISTFILES += \
     res.rc \
     res.rc
+
+QMAKE_LFLAGS += -static -static-libgcc
