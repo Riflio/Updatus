@@ -32,8 +32,8 @@ int main(int argc, char *argv[])
     parser.addOption(showLogOpt);
 
     QCommandLineOption guiOpt(
-        QStringList()<<"g"<<"gui",
-        QObject::tr("main", "Show GUI")
+        QStringList()<<"g"<<"nogui",
+        QObject::tr("main", "Not show GUI")
     );
     parser.addOption(guiOpt);
 
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 
     AppCore * core = new AppCore(nullptr);
 
-    if ( parser.isSet(guiOpt) ) {
+    if ( !parser.isSet(guiOpt) ) {
         core->withGui();
     }
 
