@@ -38,8 +38,8 @@ int main(int argc, char *argv[])
     parser.addOption(guiOpt);
 
     QCommandLineOption autoQuitOpt(
-        QStringList()<<"q"<<"quit",
-        QObject::tr("main", "Quit after complete")
+        QStringList()<<"q"<<"noquit",
+        QObject::tr("main", "No quit after complete")
     );
     parser.addOption(autoQuitOpt);
 
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
         core->withGui();
     }
 
-    if ( parser.isSet(autoQuitOpt) ) {
+    if ( !parser.isSet(autoQuitOpt) ) {
         core->autoQuit(true);
     }
 

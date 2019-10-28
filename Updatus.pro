@@ -1,6 +1,6 @@
 QT += network core gui widgets
 
-CONFIG += c++11 console
+CONFIG += c++11
 
 TEMPLATE = app
 

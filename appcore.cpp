@@ -141,7 +141,7 @@ void AppCore::newStatus(QString msg, int mode)
 * @param arguments
 * @param workingDir
 */
-bool AppCore::runAfter(QString path, const QStringList &arguments, QString workingDir)
+bool AppCore::runAfter(QString path, QStringList arguments, QString workingDir)
 {
     if ( path.isEmpty() ) return false;
     qInfo()<<"Run after"<<path<<arguments.join(" ")<<workingDir;
