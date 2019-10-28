@@ -21,12 +21,17 @@ AppCore::~AppCore()
 
 bool AppCore::upgrade(QString mainCnfPath)
 {
+    QFileInfo mainCnfInfo(mainCnfPath);
+
     newStatus(tr("Start upgrade from %1.").arg(mainCnfPath), 1);
 
-    if ( !QFile::exists(mainCnfPath) ) {
+    if ( !mainCnfInfo.exists() ) {
         newStatus(tr("Configuration file not exists!"), -1);
         return false;
     }
+
+    //-- Рабочей директорией будем считать расположение файла настроек и все относительные пути относительно него
+    QDir::setCurrent(mainCnfInfo.absoluteDir().path());
 
     _mainCnf = new QSettings(mainCnfPath, QSettings::IniFormat, this);
 

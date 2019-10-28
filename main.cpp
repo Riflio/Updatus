@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QDir>
 
 #include "appcore.h"
 #include "defines.h"
@@ -67,7 +68,12 @@ int main(int argc, char *argv[])
         core->autoQuit(true);
     }
 
-    core->upgrade(parser.value(confFileOpt));
+
+    QString confFilePath = ( parser.isSet(confFileOpt) )? parser.value(confFileOpt) : QApplication::applicationDirPath()+QDir::separator()+parser.value(confFileOpt);
+
+    if ( !core->upgrade(confFilePath) ) {
+        return -1;
+    }
 
     return app.exec();
 }
