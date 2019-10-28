@@ -138,13 +138,15 @@ void AppCore::newStatus(QString msg, int mode)
 /**
 * @brief Запускаем указанную программу после проверки обновлений
 * @param path
+* @param arguments
+* @param workingDir
 */
-bool AppCore::runAfter(QString path)
+bool AppCore::runAfter(QString path, const QStringList &arguments, QString workingDir)
 {
     if ( path.isEmpty() ) return false;
-    qInfo()<<"Run after"<<path;
+    qInfo()<<"Run after"<<path<<arguments.join(" ")<<workingDir;
 
-    bool st = QProcess::startDetached(path);
+    bool st = QProcess::startDetached(path, arguments, workingDir);
 
     return st;
 }
@@ -154,7 +156,11 @@ bool AppCore::runAfter(QString path)
 */
 void AppCore::quit()
 {
-    runAfter(_mainCnf->value("runAfter").toString());
+    runAfter(
+        _mainCnf->value("runAfter").toString(),
+        _mainCnf->value("runAfter-arguments").toString().split(";"),
+        _mainCnf->value("runAfter-workingDir").toString()
+    );
 
     _mainCnf->sync();
 

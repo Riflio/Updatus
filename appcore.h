@@ -30,7 +30,7 @@ public:
 
     void newStatus(QString msg, int mode);
 
-    bool runAfter(QString path);
+    bool runAfter(QString path, const QStringList &arguments, QString workingDir);
 
     void quit();
 
