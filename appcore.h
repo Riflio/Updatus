@@ -18,6 +18,8 @@ public:
     explicit AppCore(QObject *parent = nullptr);
     ~AppCore();
 
+    bool init(QString mainCnfPath);
+
     bool upgrade(QString mainCnfPath);
 
     int collectInstalledPackadges();

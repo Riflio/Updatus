@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QDir>
+#include <QObject>
 
 #include "appcore.h"
 #include "defines.h"
@@ -27,7 +28,7 @@ int main(int argc, char *argv[])
 
     QCommandLineOption showLogOpt(
         QStringList()<<"l"<<"log",
-        QObject::tr("main", "Show log")
+        QObject::tr("main", "Show log in console")
     );
     parser.addOption(showLogOpt);
 
@@ -45,13 +46,8 @@ int main(int argc, char *argv[])
 
     parser.process(app);
 
-    if ( parser.isSet(showLogOpt) && !parser.value(showLogOpt).isEmpty() ) {
-        Logger::instance().setLogDir(parser.value(showLogOpt));
-    } else {
-        Logger::instance().setLogDir(QApplication::applicationDirPath());
-    }
 
-
+    Logger::instance();
     Logger::instance().setQDebugWrapper();
 
     if ( parser.isSet(showLogOpt) ) {
@@ -68,10 +64,11 @@ int main(int argc, char *argv[])
         core->autoQuit(true);
     }
 
-
     QString confFilePath = ( parser.isSet(confFileOpt) )? parser.value(confFileOpt) : QApplication::applicationDirPath()+QDir::separator()+parser.value(confFileOpt);
 
-    if ( !core->upgrade(confFilePath) ) {
+    bool upgrdSt = core->upgrade(confFilePath);
+
+    if ( !upgrdSt && parser.isSet(guiOpt) ) { //-- Если не удалось и без GUI - сразу выходим
         return -1;
     }
 

@@ -7,9 +7,7 @@
 AppCore::AppCore(QObject *parent)
     :QObject(parent), _mainWindow(nullptr), _hasError(false), _autoQuit(false)
 {
-    Logger::instance();
-    _packageSatSolver = new PackageSatSolver();    
-    qInfo()<<tr("Welcome to Updatus version %1 - update manager for our programs.").arg(VERSION);
+    _packageSatSolver = new PackageSatSolver();
 }
 
 AppCore::~AppCore()
@@ -19,23 +17,50 @@ AppCore::~AppCore()
     if ( !!_mainWindow ) delete _mainWindow;
 }
 
-bool AppCore::upgrade(QString mainCnfPath)
+/**
+* @brief Инициализируем всё необходимое
+* @param mainCnfPath
+* @return
+*/
+bool AppCore::init(QString mainCnfPath)
 {
     QFileInfo mainCnfInfo(mainCnfPath);
 
-    newStatus(tr("Start upgrade from %1.").arg(mainCnfPath), 1);
-
-    if ( !mainCnfInfo.exists() ) {
-        newStatus(tr("Configuration file not exists!"), -1);
+    //-- Проверяем основной конфиг-файл
+    if ( !mainCnfInfo.exists() || !Updater::checkFileAccess(mainCnfPath) ) {
+        newStatus(tr("Configuration file %1 not exists or has no access. Break!").arg(mainCnfPath), -1);
         return false;
     }
+    _mainCnf = new QSettings(mainCnfPath, QSettings::IniFormat, this);
 
     //-- Рабочей директорией будем считать расположение файла настроек и все относительные пути относительно него
     QDir::setCurrent(mainCnfInfo.absoluteDir().path());
 
-    _mainCnf = new QSettings(mainCnfPath, QSettings::IniFormat, this);
-
+    //-- Настраиваем лог
     if ( !_mainCnf->value("logDir").toString().isEmpty() ) Logger::instance().setLogDir(_mainCnf->value("logDir").toString());
+    QString logDir = ( !_mainCnf->value("logDir").toString().isEmpty() )? _mainCnf->value("logDir").toString() : QApplication::applicationDirPath();
+    if ( !Updater::checkFolderAccess(logDir) ) {
+        newStatus(tr("No access to logs dir. Break!"), -1);
+        return false;
+    }
+    Logger::instance().setLogDir(logDir);
+
+    //-- Проверяем существование и возомжность записи директории временных файлов
+    if ( !Updater::checkFolderAccess(_mainCnf->value("tempDir").toString()) ) {
+        newStatus(tr("No access to tempDir. Break!"), -1);
+        return false;
+    }
+
+    newStatus(tr("Welcome to Updatus version %1 - update manager for our programs.").arg(VERSION), 1);
+
+    return true;
+}
+
+bool AppCore::upgrade(QString mainCnfPath)
+{
+    if ( !init(mainCnfPath) ) return false;
+
+    newStatus(tr("Start upgrade from %1.").arg(mainCnfPath), 1);
 
     _collectUpdtCnfManager = new DownloadManager(this);
     _updater = new Updater(this, _mainCnf);
@@ -156,15 +181,17 @@ bool AppCore::runAfter(QString path, QStringList arguments, QString workingDir)
 */
 void AppCore::quit()
 {
+    Logger::instance().sendToServer(QUrl(_mainCnf->value("sendLogs").toString()), _infoVariables);
+
+    if ( _hasError ) { return; }
+
+    _mainCnf->sync();
+
     runAfter(
         _mainCnf->value("runAfter").toString(),
         _mainCnf->value("runAfter-arguments").toString().split(";"),
         _mainCnf->value("runAfter-workingDir").toString()
     );
-
-    _mainCnf->sync();
-
-    Logger::instance().sendToServer(QUrl(_mainCnf->value("sendLogs").toString()), _infoVariables);
 
     if ( _autoQuit || !_mainWindow ) QApplication::quit();
 }

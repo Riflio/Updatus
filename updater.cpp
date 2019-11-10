@@ -44,11 +44,10 @@ int PackadgeCandidateUpdater::downloadProgress() const
 * @brief Проверяем, есть ли у нас право изменять файл
 * @param path
 */
-bool Updater::checkFileAccess(QString path) const
+bool Updater::checkFileAccess(QString path)
 {
     QFile f(path);
-    if ( !f.open(QIODevice::WriteOnly) ) return false;
-
+    if ( !f.open(QIODevice::ReadWrite) ) return false;
     f.close();
     return true;
 }
@@ -58,9 +57,11 @@ bool Updater::checkFileAccess(QString path) const
 * @param path
 * @return
 */
-bool Updater::checkFolderAccess(QString path) const
+bool Updater::checkFolderAccess(QString path)
 {
-    return true; //TODO: Сделать
+    QFileInfo d(path);
+    if( !d.isDir() || !d.isWritable()) { return false; }
+    return true;
 }
 
 void PackadgeCandidateUpdater::onDownloadComplete(QTemporaryFile * packetFile)
@@ -117,8 +118,6 @@ void PackadgeCandidateUpdater::onDownloadProgress(int pr, int bytes)
 Updater::Updater(QObject *parent, QSettings * mainCnf)
     : QObject(parent), _mainCnf(mainCnf), _hasError(false)
 {
-    //TODO: Проверять существование tempDir и доступность для записи/чтения
-
     _recalcDwnPrTr.setInterval(1000);
     connect(&_recalcDwnPrTr, &QTimer::timeout, this, &Updater::recalcDownloadProgress);
 }

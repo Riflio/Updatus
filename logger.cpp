@@ -9,7 +9,7 @@
 #include <QApplication>
 #include <iostream>
 
-const QtMessageHandler Logger::QT_DEFAULT_MESSAGE_HANDLER = qInstallMessageHandler(0);
+const QtMessageHandler Logger::QT_DEFAULT_MESSAGE_HANDLER = qInstallMessageHandler(nullptr);
 
 Logger::Logger(QObject *parent) : QObject(parent), showLog(false), _manager(nullptr)
 {
@@ -61,7 +61,7 @@ void Logger::qDebugWrapperMessageHandler(QtMsgType type, const QMessageLogContex
         case QtFatalMsg: sType = "FATAL"; break;
     }
 
-    bool lm =Logger::instance().msg(
+    bool lm = Logger::instance().msg(
         QDateTime::currentDateTime().toString("yyyyMMdd h:mm:ss.zzz"),
         sType,
         context.category,
@@ -121,6 +121,8 @@ bool Logger::sendToServer(QUrl url, const QMap<QString, QVariant> &variables)
     request.setUrl(url);
 
     _manager->post(request, mp);
+
+    _logFile->open(QIODevice::WriteOnly | QIODevice::Append);
 
     return true;
 }
