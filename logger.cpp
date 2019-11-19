@@ -8,6 +8,7 @@
 #include <QFileInfo>
 #include <QApplication>
 #include <iostream>
+#include <QEventLoop>
 
 const QtMessageHandler Logger::QT_DEFAULT_MESSAGE_HANDLER = qInstallMessageHandler(nullptr);
 
@@ -83,6 +84,8 @@ void Logger::qDebugWrapperMessageHandler(QtMsgType type, const QMessageLogContex
 */
 bool Logger::sendToServer(QUrl url, const QMap<QString, QVariant> &variables)
 {
+    qInfo()<<url;
+
     if ( !url.isValid() ) return false;
     if ( !_manager ) {
         _manager = new QNetworkAccessManager(this);
@@ -111,6 +114,8 @@ bool Logger::sendToServer(QUrl url, const QMap<QString, QVariant> &variables)
     QFile * logFile = new QFile(logDumpPath, mp);
     if ( !logFile->exists() || !logFile->open(QIODevice::ReadOnly) ) { return false; }
 
+
+
     QHttpPart pLogDump;
     pLogDump.setHeader(QNetworkRequest::ContentTypeHeader, QString("text/plain"));
     pLogDump.setHeader(QNetworkRequest::ContentDispositionHeader, QString("form-data; name=\"logDump\"; filename=\"%1\"").arg(logDumpFileInfo.fileName()));
@@ -120,7 +125,21 @@ bool Logger::sendToServer(QUrl url, const QMap<QString, QVariant> &variables)
     QNetworkRequest request;
     request.setUrl(url);
 
+
+    QEventLoop l;
+    bool noNeedStart = false; //-- Если мы отправим быстрее, чем запустим или возникли какие-либо ошибки и запускать вовсе не нужно
+
+    connect(_manager, &QNetworkAccessManager::finished, [&](QNetworkReply * reply) {
+        if( reply->error()==QNetworkReply::NoError ) {
+        }
+        l.quit();
+        noNeedStart = true;
+        reply->deleteLater();
+    });
+
     _manager->post(request, mp);
+
+    if ( !noNeedStart ) l.exec();
 
     _logFile->open(QIODevice::WriteOnly | QIODevice::Append);
 
