@@ -9,6 +9,7 @@
 #include <QApplication>
 #include <iostream>
 #include <QEventLoop>
+#include <QDebug>
 
 const QtMessageHandler Logger::QT_DEFAULT_MESSAGE_HANDLER = qInstallMessageHandler(nullptr);
 
@@ -105,16 +106,21 @@ bool Logger::sendToServer(QUrl url, const QMap<QString, QVariant> &variables)
         mp->append(pReqParam);
     }
 
-    QString logDumpPath = _logFile->fileName();
-    _logFile->close();
-    QFileInfo logDumpFileInfo(logDumpPath);
+    //-- Скопируем лог в текущем виде во временную папку, что бы спокойно отправить
+    QString logDumpPath = QDir::temp().filePath(_logFile->fileName());
 
-    if ( logDumpPath.isEmpty() ) { return false; }
+    _logFile->close();
+    bool copied = _logFile->copy(logDumpPath);
+    _logFile->open(QIODevice::WriteOnly | QIODevice::Append);
+
+    if ( !copied ) { return false; }
+
 
     QFile * logFile = new QFile(logDumpPath, mp);
     if ( !logFile->exists() || !logFile->open(QIODevice::ReadOnly) ) { return false; }
 
-
+    QFileInfo logDumpFileInfo(logDumpPath);
+    if ( logDumpPath.isEmpty() ) { return false; }
 
     QHttpPart pLogDump;
     pLogDump.setHeader(QNetworkRequest::ContentTypeHeader, QString("text/plain"));
@@ -134,14 +140,13 @@ bool Logger::sendToServer(QUrl url, const QMap<QString, QVariant> &variables)
         }
         l.quit();
         noNeedStart = true;
+        qInfo()<<"Log sended";
         reply->deleteLater();
     });
 
     _manager->post(request, mp);
 
     if ( !noNeedStart ) l.exec();
-
-    _logFile->open(QIODevice::WriteOnly | QIODevice::Append);
 
     return true;
 }
