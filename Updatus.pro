@@ -58,6 +58,7 @@ RC_FILE = res.rc
 
 DISTFILES += \
     README.md \
+    Updatus.cnf \
     res.rc \
     res.rc
 
