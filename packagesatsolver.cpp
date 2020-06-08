@@ -159,7 +159,7 @@ int PackageSatSolver::prepareInstList(const QHash<QString, Packadge*> & instPack
         foreach(QList<int> condCjOr, packetCondCj) {
             vec<Lit> lits;
             foreach(int lit, condCjOr) {
-                lits.push(mkLit(lit));
+                lits.push(mkLit(lit, false));
             }
             solver.addClause_(lits);
         }
@@ -170,7 +170,7 @@ int PackageSatSolver::prepareInstList(const QHash<QString, Packadge*> & instPack
     foreach(QString exc, excludes) { //TODO: Отптимизировать и условия по такому пакету не собирать
         vec<Lit> lits;
         int excIndx = indexes.indexOf(exc);
-        lits.push(~mkLit(excIndx));
+        lits.push(~mkLit(excIndx, false));
         solver.addClause_(lits);
     }
 
@@ -185,7 +185,7 @@ int PackageSatSolver::prepareInstList(const QHash<QString, Packadge*> & instPack
         //-- Создаём условия, к примеру у пакета есть версии 1 2 3 4, то что бы был только один должно быть: -1 -2, -1 -3, -1 -4, -2 -3, -2 -4, -3 -4
         vec<Lit> lits;
         foreach(int ver, versionsIndx) {
-            lits.push(mkLit(ver));
+            lits.push(mkLit(ver, false));
         }
         solver.addClause_(lits);
         for(int i=0; i< versionsIndx.count(); ++i) {
@@ -193,8 +193,8 @@ int PackageSatSolver::prepareInstList(const QHash<QString, Packadge*> & instPack
             for(int j=i+1; j<versionsIndx.count(); ++j) {
                 int litN = versionsIndx.at(j);
                 vec<Lit> lits;
-                lits.push(~mkLit(litF));
-                lits.push(~mkLit(litN));
+                lits.push(~mkLit(litF, false));
+                lits.push(~mkLit(litN, false));
                 solver.addClause_(lits);
             }
         }

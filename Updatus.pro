@@ -58,4 +58,4 @@ DISTFILES += \
     res.rc \
     res.rc
 
-QMAKE_LFLAGS += -static -static-libgcc
+#QMAKE_LFLAGS += -static -static-libgcc
