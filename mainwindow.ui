@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>468</width>
-    <height>366</height>
+    <height>371</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -45,7 +45,7 @@
     <item>
      <widget class="QLabel" name="lblAbout">
       <property name="text">
-       <string>Менеджер обновлений.</string>
+       <string>Update manager</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
@@ -57,7 +57,7 @@
       <item>
        <widget class="QLabel" name="lblCurrentActionDescr">
         <property name="text">
-         <string>Состояние:</string>
+         <string>State:</string>
         </property>
        </widget>
       </item>
@@ -93,7 +93,7 @@
     <item>
      <widget class="QCommandLinkButton" name="logBtnShow">
       <property name="text">
-       <string>Подробности</string>
+       <string>More info</string>
       </property>
      </widget>
     </item>

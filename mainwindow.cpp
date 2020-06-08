@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "appcore.h"
 #include "logger.h"
+#include "defines.h"
 
 MainWindow::MainWindow(QWidget *parent, AppCore * core) :
     QMainWindow(parent), ui(new Ui::MainWindow), _core(core)
@@ -9,6 +10,8 @@ MainWindow::MainWindow(QWidget *parent, AppCore * core) :
     ui->setupUi(this);
     ui->logListView->hide();
     window()->adjustSize();
+
+    ui->lblAbout->setText(QString(tr("Update manager. Version: %1.")+" By PavelK.ru").arg(VERSION));
 
     connect(&Logger::instance(), &Logger::newMsg, this, &MainWindow::onNewMsg);
     connect(_core, &AppCore::progress, this, &MainWindow::onProgressChanged);
