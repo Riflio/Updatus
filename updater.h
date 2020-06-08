@@ -7,52 +7,11 @@
 
 #include "packadge.h"
 #include "downloadmanager.h"
-
+#include "packadgecandidateupdater.h"
 
 /**
 * @brief Обновляем/устанавливаем пакеты физически
 */
-
-
-class PackadgeCandidateUpdater: public QObject, public PackadgeCandidate
-{
-    Q_OBJECT
-public:
-    explicit PackadgeCandidateUpdater(const PackadgeCandidate&other, QString tempDir);
-
-    enum UpdateStatus {
-        US_NONE=2,
-        US_REQUESTED=4,
-        US_DOWNLOADED=8,
-        US_INSTALLED=16
-    };
-
-    void addStatus(int status);
-    int status() const;
-
-    QString cachePacketPath() const;
-
-    void download();
-
-    int downloadProgress() const;
-
-private slots:
-    void onDownloadComplete(QTemporaryFile * packetFile);
-    void onDownloadError(QString err);
-    void onDownloadProgress(int pr, int bytes);
-
-signals:
-    void error();
-    void packageDownloaded(PackadgeCandidateUpdater * pack);
-
-private:
-    int _status;
-    DownloadManager * _dlMr;
-    QString _cachePacketPath;
-    QString _tempDir;
-    int _dwnProgress;
-
-};
 
 class Updater : public QObject
 {
@@ -91,6 +50,8 @@ private:
     QTimer _recalcDwnPrTr;
     long _totalProgress;
     int _downloadStreams;
+    int _downloadAttempts;
+
 };
 
 #endif // UPDATER_H

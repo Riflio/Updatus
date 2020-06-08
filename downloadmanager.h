@@ -16,7 +16,7 @@ class DownloadManager : public QObject
     Q_OBJECT
 public:
     explicit DownloadManager(QObject *parent = nullptr);
-    int request(QUrl url);
+    int request(QUrl url, int attempts);
 
 signals:
     void answerReady(QTemporaryFile * tempFile);
@@ -31,6 +31,12 @@ private slots:
 
 private:
     QNetworkAccessManager * _naManager;
+    int _attempts;
+    int _curAttempt;
+
+    bool sendRequest();
+    bool tryRequestAgain();
+    QNetworkRequest _request;
 };
 
 #endif // DOWNLOADMANAGER_H

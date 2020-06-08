@@ -126,7 +126,9 @@ int AppCore::collectAvaliableUpdates() //TODO: Сделать возможнос
     QString server = _mainCnf->value("servers/main").toString();    
     newStatus(tr("Try collect updates cnf from server %1").arg(server), 1);
 
-    _collectUpdtCnfManager->request(QUrl(server+"repository.cnf"));
+    int downloadAttempts = _mainCnf->value("downloadAttempts", 3).toInt();
+
+    _collectUpdtCnfManager->request(QUrl(server+"repository.cnf"), downloadAttempts);
 
     return 1;
 }

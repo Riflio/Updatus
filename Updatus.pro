@@ -24,6 +24,7 @@ SOURCES += main.cpp \
     mainwindow.cpp \
     miniSat/minisat/core/Solver.cc \
     packadge.cpp \
+    packadgecandidateupdater.cpp \
     packagecandidate.cpp \
     packageinfo.cpp \
     packagesatsolver.cpp \
@@ -38,6 +39,7 @@ HEADERS += \
     mainwindow.h \
     miniSat/minisat/core/Solver.h \
     packadge.h \
+    packadgecandidateupdater.h \
     packagecandidate.h \
     packageinfo.h \
     packagesatsolver.h \
@@ -55,6 +57,7 @@ FORMS += \
 RC_FILE = res.rc
 
 DISTFILES += \
+    README.md \
     res.rc \
     res.rc
 

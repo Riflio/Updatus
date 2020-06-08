@@ -5,24 +5,59 @@
 #include <QFile>
 #include <QDebug>
 
-DownloadManager::DownloadManager(QObject *parent) : QObject(parent)
+DownloadManager::DownloadManager(QObject *parent) : QObject(parent), _curAttempt(0)
 {
     _naManager = new QNetworkAccessManager(this);
     connect(_naManager, &QNetworkAccessManager::finished, this, &DownloadManager::onNetworkAnswer);
+
+
+    _request.setRawHeader("User-Agent", QString("Updatys %1").arg(VERSION).toUtf8());
 }
 
-int DownloadManager::request(QUrl url)
+/**
+* @brief Делаем запрос
+* @param url
+* @param attempts
+* @return
+*/
+int DownloadManager::request(QUrl url, int attempts)
 {
-    qDebug()<<"Send request"<<url.toString();
-    QNetworkRequest request;
-    request.setUrl(url);
-    request.setRawHeader("User-Agent", QString("Updatys %1").arg(VERSION).toUtf8());
-    QNetworkReply *reply = _naManager->get(request);
+    qInfo()<<"Send request"<<url.toString();
+    _attempts = attempts;
+    _curAttempt = 0;
+
+    _request.setUrl(url);
+    if ( !sendRequest() ) { return 0; }
+
+    return  1;
+}
+
+/**
+* @brief Отправляем запрос
+* @param url
+*/
+bool DownloadManager::sendRequest()
+{
+    if ( _curAttempt>=_attempts ) { return false; }
+    _curAttempt++;
+
+    QNetworkReply *reply = _naManager->get(_request);
 
     connect(reply, QOverload<QNetworkReply::NetworkError>::of(&QNetworkReply::error), this, &DownloadManager::onNetworkError);
     //connect(reply, &QNetworkReply::sslErrors, this, &DownloadManager::onNetworkErrorSsl);
     connect(reply, &QNetworkReply::downloadProgress, this, &DownloadManager::onProgressChanged);
-    return  1;
+
+    return true;
+}
+
+bool DownloadManager::tryRequestAgain()
+{
+    if ( sendRequest() ) { //-- Попробуем ещё разик
+        qWarning()<<"Previus attempt download"<<_request.url().toString()<<"has error. Let's try again, number"<<_curAttempt<<"of"<<_attempts;
+        return true;
+    }
+
+    return false;
 }
 
 /**
@@ -31,11 +66,6 @@ int DownloadManager::request(QUrl url)
 */
 void DownloadManager::onNetworkAnswer(QNetworkReply *reply)
 {
-    if(reply->error()){
-        emit error(reply->errorString());
-        return;
-    }
-
     QTemporaryFile * tmpFile = new QTemporaryFile(this);
 
     if( !tmpFile->open() ){
@@ -49,14 +79,24 @@ void DownloadManager::onNetworkAnswer(QNetworkReply *reply)
     emit answerReady(tmpFile);
 }
 
+/**
+* @brief Ошибка сети
+* @param err
+*/
 void DownloadManager::onNetworkError(QNetworkReply::NetworkError err)
 {
+    if ( tryRequestAgain() ) { return; }
     emit error(QString("Network error: %1").arg(err));
 }
 
+/**
+* @brief Ошибка сети по ssl
+* @param errors
+*/
 void DownloadManager::onNetworkErrorSsl(const QList<QSslError> &errors)
 {
-    emit error(QString("Network ssl error"));
+    if ( tryRequestAgain() ) { return; }
+    emit error(QString("Network ssl error: %1").arg(errors[0].errorString()));
 }
 
 void DownloadManager::onProgressChanged(int bytesReceived, int bytesTotal)
@@ -66,3 +106,4 @@ void DownloadManager::onProgressChanged(int bytesReceived, int bytesTotal)
     if ( prR<pr ) prR++;
     emit progress(prR, bytesReceived);
 }
+

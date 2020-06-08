@@ -4,40 +4,14 @@
 
 #include <QDebug>
 
-PackadgeCandidateUpdater::PackadgeCandidateUpdater(const PackadgeCandidate &other, QString tempDir):
-    PackadgeCandidate(other), _status(US_NONE), _tempDir(tempDir)
+Updater::Updater(QObject *parent, QSettings * mainCnf)
+    : QObject(parent), _mainCnf(mainCnf), _hasError(false)
 {
-    _dlMr = new DownloadManager();
-    connect(_dlMr, &DownloadManager::answerReady, this, &PackadgeCandidateUpdater::onDownloadComplete);
-    connect(_dlMr, &DownloadManager::error, this, &PackadgeCandidateUpdater::onDownloadError);    
-    connect(_dlMr, &DownloadManager::progress, this, &PackadgeCandidateUpdater::onDownloadProgress);
-}
+    _recalcDwnPrTr.setInterval(1000);
+    connect(&_recalcDwnPrTr, &QTimer::timeout, this, &Updater::recalcDownloadProgress);
 
-void PackadgeCandidateUpdater::addStatus(int status)
-{
-    _status |= status;
-}
-
-int PackadgeCandidateUpdater::status() const
-{
-    return _status;
-}
-
-QString PackadgeCandidateUpdater::cachePacketPath() const
-{
-    return _cachePacketPath;
-}
-
-void PackadgeCandidateUpdater::download()
-{
-    _dwnProgress = 0;
-    addStatus(US_REQUESTED);
-    _dlMr->request(QUrl(downloadUrl()));
-}
-
-int PackadgeCandidateUpdater::downloadProgress() const
-{
-    return  _dwnProgress;
+    _downloadStreams = _mainCnf->value("downloadStreams", 10).toInt();
+    _downloadAttempts = _mainCnf->value("downloadAttempts", 3).toInt();
 }
 
 /**
@@ -62,66 +36,6 @@ bool Updater::checkFolderAccess(QString path)
     QFileInfo d(path);
     if( !d.isDir() || !d.isWritable()) { return false; }
     return true;
-}
-
-void PackadgeCandidateUpdater::onDownloadComplete(QTemporaryFile * packetFile)
-{
-    qInfo()<<"Candidate downloaded"<<fullName();
-
-    //TODO: Сверять контрольные суммы первым делом
-
-    QDir tempDir(_tempDir);
-    tempDir.cd(pathDir());
-
-    if ( !tempDir.exists() ) {
-        tempDir.mkpath(tempDir.absolutePath());
-    }
-
-    if ( !tempDir.exists() ) {
-        qWarning()<<"Can not create cache path"<<tempDir.absolutePath();
-        emit error();
-        return;
-    }
-
-    QString cfn = tempDir.filePath(pathFileName());
-
-    if ( !QFile::exists(cfn)) {
-        if ( !packetFile->copy(cfn) ) {
-            qWarning()<<"Can not move temp file to cache dir"<<cfn;
-            emit error();
-            return;
-        }
-    }
-
-    _cachePacketPath = cfn;
-    packetFile->close();
-    addStatus(US_DOWNLOADED);
-
-    emit packageDownloaded(this);
-}
-
-void PackadgeCandidateUpdater::onDownloadError(QString err)
-{
-    qWarning()<<"Error downloading package"<<fullName()<<":"<<err;
-    emit error();
-}
-
-void PackadgeCandidateUpdater::onDownloadProgress(int pr, int bytes)
-{
-    Q_UNUSED(pr);
-    _dwnProgress = bytes;
-}
-
-
-//========================================================================================================
-
-Updater::Updater(QObject *parent, QSettings * mainCnf)
-    : QObject(parent), _mainCnf(mainCnf), _hasError(false)
-{
-    _recalcDwnPrTr.setInterval(1000);
-    connect(&_recalcDwnPrTr, &QTimer::timeout, this, &Updater::recalcDownloadProgress);
-
-    _downloadStreams = _mainCnf->value("downloadStreams", 10).toInt();
 }
 
 /**
@@ -156,7 +70,7 @@ int Updater::goInstall(const QList<PackadgeCandidate *> & instList)
 
     int downloadCount = 0;
     foreach(PackadgeCandidateUpdater * pcu, _updaterPackages) {
-        pcu->download();
+        pcu->download(_downloadAttempts);
         if ( (++downloadCount)>=_downloadStreams ) { break; }
     }
 
@@ -178,7 +92,7 @@ void Updater::goError()
 }
 
 /**
-* @brief Как только пакет скачался переносим его в папку кэша
+* @brief Как только пакет скачался
 * @param pack
 * @param packetFile
 */
@@ -188,6 +102,7 @@ void Updater::onPacketDownloaded(PackadgeCandidateUpdater *pack)
 
     if ( _hasError ) return;
 
+    //-- Проверим, все ли скачались или ещё будем ждать
     foreach(PackadgeCandidateUpdater * up, _updaterPackages) {
         if ( !(up->status() & PackadgeCandidateUpdater::US_DOWNLOADED) ) return;
     }
@@ -197,7 +112,7 @@ void Updater::onPacketDownloaded(PackadgeCandidateUpdater *pack)
 
 void Updater::onPacketDownloadError()
 {
-    emit error();
+    goError();
 }
 
 /**
@@ -205,6 +120,9 @@ void Updater::onPacketDownloadError()
 */
 void Updater::recalcDownloadProgress()
 {
+    if ( _hasError ) return;
+
+    //-- Так как в процессе загрузки прогресс может откатиться (к примеру, при ошибке скачивания), то придётся перещитывать заново
     long currentProgress = 0;
     int downloadCount = 0;
     foreach(PackadgeCandidateUpdater * pcu, _updaterPackages) {
@@ -213,7 +131,7 @@ void Updater::recalcDownloadProgress()
         //-- Запускаем ещё порцию на скачивание
         if ( (downloadCount<_downloadStreams) && (pcu->status()==PackadgeCandidateUpdater::US_NONE) ) {
             downloadCount++;
-            pcu->download();
+            pcu->download(_downloadAttempts);
         } else
         if ( (pcu->status()&PackadgeCandidateUpdater::US_REQUESTED) && !(pcu->status()&PackadgeCandidateUpdater::US_DOWNLOADED) ) {
             downloadCount++;

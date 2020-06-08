@@ -3,7 +3,11 @@ defaultInstPath=tests
 lastUpdated=07.08.19 01:23
 sendLogs=
 tempDir=./updateCache/
-version=1.0
+runAfter=
+runAfter-workingDir=
+version=1.2
+downloadStreams=2
+downloadAttempts=5
 
 [servers]
 main=http://suvenirus.dev/updatemanager/linux/
