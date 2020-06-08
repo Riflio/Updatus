@@ -83,13 +83,14 @@ private:
     void allPacketsDownloaded();
     void removeOldInstallNew();
 
-private:    
-    QHash<QString, PackadgeCandidateUpdater*> _updaterPackages;
+private:
+    typedef QHash<QString, PackadgeCandidateUpdater*> TUpdaterPackages;
+    TUpdaterPackages _updaterPackages;
     QSettings * _mainCnf;
     bool _hasError;
     QTimer _recalcDwnPrTr;
     long _totalProgress;
-
+    int _downloadStreams;
 };
 
 #endif // UPDATER_H

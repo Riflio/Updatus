@@ -31,8 +31,8 @@ QString PackadgeCandidateUpdater::cachePacketPath() const
 void PackadgeCandidateUpdater::download()
 {
     _dwnProgress = 0;
-    _dlMr->request(QUrl(downloadUrl()));
     addStatus(US_REQUESTED);
+    _dlMr->request(QUrl(downloadUrl()));
 }
 
 int PackadgeCandidateUpdater::downloadProgress() const
@@ -120,6 +120,8 @@ Updater::Updater(QObject *parent, QSettings * mainCnf)
 {
     _recalcDwnPrTr.setInterval(1000);
     connect(&_recalcDwnPrTr, &QTimer::timeout, this, &Updater::recalcDownloadProgress);
+
+    _downloadStreams = _mainCnf->value("downloadStreams", 10).toInt();
 }
 
 /**
@@ -134,6 +136,7 @@ int Updater::goInstall(const QList<PackadgeCandidate *> & instList)
     _updaterPackages.clear();
     _totalProgress = 0;
 
+    //-- Подготавливаем всех к скачиванию
     foreach(PackadgeCandidate * cnd, instList) {
 
         if ( _hasError ) return  -1;
@@ -149,11 +152,15 @@ int Updater::goInstall(const QList<PackadgeCandidate *> & instList)
         _totalProgress += pcu->fileSize();
     }
 
-    _recalcDwnPrTr.start();
+    //-- Начинаем скачивать
 
+    int downloadCount = 0;
     foreach(PackadgeCandidateUpdater * pcu, _updaterPackages) {
         pcu->download();
+        if ( (++downloadCount)>=_downloadStreams ) { break; }
     }
+
+    _recalcDwnPrTr.start();
 
     return 1;
 }
@@ -198,13 +205,24 @@ void Updater::onPacketDownloadError()
 */
 void Updater::recalcDownloadProgress()
 {
-    long current = 0;
+    long currentProgress = 0;
+    int downloadCount = 0;
     foreach(PackadgeCandidateUpdater * pcu, _updaterPackages) {
-        current += pcu->downloadProgress();
+        currentProgress += pcu->downloadProgress();
+
+        //-- Запускаем ещё порцию на скачивание
+        if ( (downloadCount<_downloadStreams) && (pcu->status()==PackadgeCandidateUpdater::US_NONE) ) {
+            downloadCount++;
+            pcu->download();
+        } else
+        if ( (pcu->status()&PackadgeCandidateUpdater::US_REQUESTED) && !(pcu->status()&PackadgeCandidateUpdater::US_DOWNLOADED) ) {
+            downloadCount++;
+        }
+
     }
 
 
-    double pr = static_cast<double>(current)*100.0/_totalProgress;
+    double pr = static_cast<double>(currentProgress)*100.0/_totalProgress;
     int prR = qRound(pr);
     if ( prR<pr ) prR++;
 
