@@ -45,17 +45,16 @@ void PackadgeCandidateUpdater::onDownloadComplete(QTemporaryFile * packetFile)
     //TODO: Сверять контрольные суммы первым делом
 
     QDir tempDir(_tempDir);
-    tempDir.cd(pathDir());
 
-    if ( !tempDir.exists() ) {
-        tempDir.mkpath(tempDir.absolutePath());
-    }
+    tempDir.mkpath(pathDir());
 
-    if ( !tempDir.exists() ) {
-        qWarning()<<"Can not create cache path"<<tempDir.absolutePath();
+    if ( !tempDir.exists(pathDir()) ) {
+        qWarning()<<"Can not create cache path"<<tempDir.absolutePath()+QDir::separator()+pathDir();
         emit error();
         return;
     }
+
+    tempDir.cd(pathDir());
 
     QString cfn = tempDir.filePath(pathFileName());
 
