@@ -17,6 +17,7 @@ class DownloadManager : public QObject
 public:
     explicit DownloadManager(QObject *parent = nullptr);
     int request(QUrl url, int attempts);
+    bool tryRequestAgain();
 
 signals:
     void answerReady(QTemporaryFile * tempFile);
@@ -34,8 +35,7 @@ private:
     int _attempts;
     int _curAttempt;
 
-    bool sendRequest();
-    bool tryRequestAgain();
+    bool sendRequest();    
     QNetworkRequest _request;
 };
 

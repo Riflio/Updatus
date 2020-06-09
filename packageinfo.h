@@ -21,6 +21,7 @@ public:
     QString fullName() const;
     int instType() const;
     long fileSize() const;
+    QString checksumm() const;
 
     enum instTypes {
         asManual =2,
@@ -39,6 +40,7 @@ private:
     int _versionInt;
     int _instType;
     long _fileSize;
+    QString _checksumm;
 
 };
 

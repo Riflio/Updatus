@@ -1,6 +1,7 @@
 #include "packadgecandidateupdater.h"
 #include <QDebug>
 #include <QDir>
+#include <QCryptographicHash>
 
 PackadgeCandidateUpdater::PackadgeCandidateUpdater(const PackadgeCandidate &other, QString tempDir):
     PackadgeCandidate(other), _status(US_NONE), _tempDir(tempDir)
@@ -42,8 +43,35 @@ void PackadgeCandidateUpdater::onDownloadComplete(QTemporaryFile * packetFile)
 {
     qInfo()<<"Candidate downloaded"<<fullName();
 
-    //TODO: Сверять контрольные суммы первым делом
+    //-- Сверяем контрольные суммы
+    QCryptographicHash hash(QCryptographicHash::Sha1);
+    long int readed = 0;
 
+    packetFile->reset();
+    while( !packetFile->atEnd() ) {
+        QByteArray bytes = packetFile->read(1024);
+        readed+=bytes.size();
+        hash.addData(bytes);
+    }
+
+    QByteArray hashBa = hash.result();
+    QString hashStr;
+    foreach (uint8_t ba, hashBa) {
+        hashStr+=QString::number(ba, 16).rightJustified(2,'0');
+    }
+
+    if ( hashStr!=checksumm() ) {
+        qWarning()<<"Wrong packet checksumm!"<<hashStr<<checksumm();
+
+        if ( !_dlMr->tryRequestAgain() ) {
+            qWarning()<<"Attempts count last.";
+            emit error();
+        }
+
+        return;
+    }
+
+    //-- Контрольная сумма совпала, можем продолжать
     QDir tempDir(_tempDir);
 
     tempDir.mkpath(pathDir());

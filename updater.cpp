@@ -10,8 +10,8 @@ Updater::Updater(QObject *parent, QSettings * mainCnf)
     _recalcDwnPrTr.setInterval(1000);
     connect(&_recalcDwnPrTr, &QTimer::timeout, this, &Updater::recalcDownloadProgress);
 
-    _downloadStreams = _mainCnf->value("downloadStreams", 10).toInt();
-    _downloadAttempts = _mainCnf->value("downloadAttempts", 3).toInt();
+    _downloadStreams = _mainCnf->value("downloadStreams", 5).toInt();
+    _downloadAttempts = _mainCnf->value("downloadAttempts", 10).toInt();
 }
 
 /**
@@ -221,8 +221,7 @@ void Updater::removeOldInstallNew()
         QZipReader zip(up->cachePacketPath(), QIODevice::ReadOnly);
         if( !zip.exists() ) {            
             qWarning()<<"Package not exist O_o"<<up->cachePacketPath();
-            emit error();
-            return;
+            return goError();
         }
 
         QList<QZipReader::FileInfo> allFiles = zip.fileInfoList();
@@ -287,8 +286,17 @@ void Updater::removeOldInstallNew()
         qInfo()<<"Unpacking"<<up->fullName();
 
         QZipReader zip(up->cachePacketPath(), QIODevice::ReadOnly);
-
         QList<QZipReader::FileInfo> allFiles = zip.fileInfoList();
+
+        if ( zip.status()!=QZipReader::NoError ) {
+            qWarning()<<"Error with packet!"<<zip.status();
+            return goError();
+        }
+
+        if ( allFiles.count()==0 ) {
+            qWarning()<<"Packet has not contains files. May be packet broken!";
+            return goError();
+        }
 
         //-- Закидываем файлы
         foreach (QZipReader::FileInfo fi, allFiles) {
@@ -298,7 +306,7 @@ void Updater::removeOldInstallNew()
             qInfo()<<"Unpack file"<<absPath;
 
             QFile file(absPath);
-            if( !file.open(QFile::WriteOnly) ) { emit error(); return; }
+            if( !file.open(QFile::WriteOnly) ) { return goError(); }
 
             file.write(zip.fileData(fi.filePath), zip.fileData(fi.filePath).size());
             //file.setPermissions(fi.permissions);

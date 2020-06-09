@@ -22,6 +22,8 @@ PackadgeInfo::PackadgeInfo(QString name, QString version, QSettings &cnf)
     }
 
     _fileSize = cnf.value(QString("%1/size").arg(fullName()), -1).toInt();
+
+    _checksumm = cnf.value(QString("%1/checksumm").arg(fullName()), -1).toString().toLower();
 }
 
 QString PackadgeInfo::path() const
@@ -72,6 +74,11 @@ int PackadgeInfo::instType() const
 long PackadgeInfo::fileSize() const
 {
     return _fileSize;
+}
+
+QString PackadgeInfo::checksumm() const
+{
+    return _checksumm;
 }
 
 QString PackadgeInfo::makeFullName(QString name, QString version)
