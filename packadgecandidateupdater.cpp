@@ -1,5 +1,5 @@
 #include "packadgecandidateupdater.h"
-
+#include <QDebug>
 #include <QDir>
 
 PackadgeCandidateUpdater::PackadgeCandidateUpdater(const PackadgeCandidate &other, QString tempDir):

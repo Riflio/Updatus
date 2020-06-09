@@ -1,8 +1,9 @@
 #include "downloadmanager.h"
-
 #include "defines.h"
+
 #include <QNetworkRequest>
 #include <QFile>
+#include <QSslError>
 #include <QDebug>
 
 DownloadManager::DownloadManager(QObject *parent) : QObject(parent), _curAttempt(0)
@@ -96,7 +97,7 @@ void DownloadManager::onNetworkError(QNetworkReply::NetworkError err)
 void DownloadManager::onNetworkErrorSsl(const QList<QSslError> &errors)
 {
     if ( tryRequestAgain() ) { return; }
-    emit error(QString("Network ssl error: %1").arg(errors[0].errorString()));
+    emit error(QString("Network ssl error"));
 }
 
 void DownloadManager::onProgressChanged(int bytesReceived, int bytesTotal)
