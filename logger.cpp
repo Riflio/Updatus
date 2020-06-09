@@ -39,7 +39,8 @@ bool Logger::msg(QString dateTime, QString type, QString category, QString funct
     QTextStream ts(_logFile);
     ts<<dateTime<<" ["<<type<<"-"<<""<<category<<"] "<<"<<<< "<<msg<<" >>>>> "<<"{"<<functionName<<"} "<<"==="<<filePath<<endl;
 
-    if ( showLog ) std::cout<<msg.toUtf8().data()<<std::endl;
+    if ( showLog ) { std::cout<<msg.toUtf8().data()<<std::endl; }
+    if ( msg.left(2)=="!!" ) { msg.remove(0, 2); std::cout<<msg.toUtf8().data()<<std::endl; }
 
     emit newMsg(msg);
 

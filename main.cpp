@@ -44,6 +44,12 @@ int main(int argc, char *argv[])
     );
     parser.addOption(autoQuitOpt);
 
+    QCommandLineOption showInstallOpt(
+        QStringList()<<"s"<<"showinstall",
+        QObject::tr("main", "Only show was packets will be installed.")
+    );
+    parser.addOption(showInstallOpt);
+
     parser.process(app);
 
 
@@ -62,6 +68,10 @@ int main(int argc, char *argv[])
 
     if ( !parser.isSet(autoQuitOpt) ) {
         core->autoQuit(true);
+    }
+
+    if ( parser.isSet(showInstallOpt) ) {
+        core->onlyShowInstall(true);
     }
 
     QString confFilePath = ( parser.isSet(confFileOpt) )? parser.value(confFileOpt) : QApplication::applicationDirPath()+QDir::separator()+parser.value(confFileOpt);

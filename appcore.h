@@ -29,12 +29,13 @@ public:
 
     void withGui();
     void autoQuit(bool st);
+    void onlyShowInstall(bool si);
 
     void newStatus(QString msg, int mode);
 
     bool runAfter(QString path, QStringList arguments, QString workingDir);
 
-    void quit();
+    void quit(bool force=false);
 
 
 signals:
@@ -63,8 +64,10 @@ private:
     QMap<QString, QVariant> _infoVariables; //-- Собираем всё, что есть у [info] в файле конфига
 
     MainWindow * _mainWindow;
+
     bool _hasError;
     bool _autoQuit;
+    bool _onlyShowInstall;
 
 };
 

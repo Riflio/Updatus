@@ -5,7 +5,7 @@
 #include <QProcess>
 
 AppCore::AppCore(QObject *parent)
-    :QObject(parent), _mainWindow(nullptr), _hasError(false), _autoQuit(false)
+    :QObject(parent), _mainWindow(nullptr), _hasError(false), _autoQuit(false), _onlyShowInstall(false)
 {
     _packageSatSolver = new PackageSatSolver();
 }
@@ -151,6 +151,15 @@ void AppCore::autoQuit(bool st)
     _autoQuit = st;
 }
 
+/**
+* @brief Отмечаем, нужно ли только показать, какие будут установлены
+* @param si
+*/
+void AppCore::onlyShowInstall(bool si)
+{
+    _onlyShowInstall = si;
+}
+
 void AppCore::newStatus(QString msg, int mode)
 {
     switch (mode) {
@@ -180,24 +189,29 @@ bool AppCore::runAfter(QString path, QStringList arguments, QString workingDir)
 
 /**
 * @brief Выходим
+* @param force - без сохранения, отправки лога, запуска прог и т.д.
 */
-void AppCore::quit()
+void AppCore::quit(bool force)
 {
-    Logger::instance().sendToServer(QUrl(_mainCnf->value("sendLogs").toString()), _infoVariables);
+    if ( !force && !_hasError ) {
+        Logger::instance().sendToServer(QUrl(_mainCnf->value("sendLogs").toString()), _infoVariables);
 
-    if ( _hasError ) { return; }
+        _mainCnf->sync();
 
-    _mainCnf->sync();
+        runAfter(
+            _mainCnf->value("runAfter").toString(),
+            _mainCnf->value("runAfter-arguments").toString().split(";"),
+            _mainCnf->value("runAfter-workingDir").toString()
+        );
+    }
 
-    runAfter(
-        _mainCnf->value("runAfter").toString(),
-        _mainCnf->value("runAfter-arguments").toString().split(";"),
-        _mainCnf->value("runAfter-workingDir").toString()
-    );
-
-    if ( _autoQuit || !_mainWindow ) QApplication::quit();
+    if ( (_autoQuit && !_hasError) || !_mainWindow ) QApplication::quit();
 }
 
+/**
+* @brief Всё скачано и расположено по совим местам, можем завершаться
+* @param newInstalled
+*/
 void AppCore::onComplete(bool newInstalled)
 {
     newStatus(tr("Complete!"), 1);
@@ -252,6 +266,26 @@ void AppCore::onUpdtCnfDownloaded(QTemporaryFile *cnfFile)
     if ( prepInst<0 ) {        
         newStatus(tr("Unable build versions three"), -1);
         onError();
+        return;
+    }
+
+    if ( _onlyShowInstall ) { //-- Если нужно только показать
+        QDebug debug = qDebug();
+        debug.noquote();
+        debug<<"!!Will be installed:"<<endl;
+        if ( toInstList.count()>0 ) {
+            foreach(PackadgeCandidate * pc, toInstList) {
+                debug<<pc->name()<<pc->version()<<endl;
+            }
+        } else {
+           debug<<"!!Has no new versions."<<endl;
+        }
+        debug.quote();
+
+        newStatus(tr("Show only installed mode."), 1);
+        onProgress(100);
+
+        quit(true);
         return;
     }
 
